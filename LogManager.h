@@ -13,15 +13,19 @@ File: LogManager.h
 #include <stdexcept>  // Include for std::runtime_error
 
 #define LOG(message) LogManager::getInstance().writeLog(message)
+#define DEBUG(message) LogManager::getInstance().writeDebugLog(message)
+
 
 
 class LogManager {
 public:
-    void init();
+    void init(bool SET_DEBUG);
     void writeLog(String message);
+    void writeDebugLog(String message);
     static LogManager& getInstance();
     String timeToString(time_t t);
 private:
+    bool m_debug;
     LogManager() {} // Constructor is private for singleton pattern
 };
 

@@ -9,8 +9,11 @@ Version: 1.0.0
 #ifndef PORT_MANAGER_H
 #define PORT_MANAGER_H
 
-#include "Port.h"
-#define MAX_PORTS 10
+#include <Arduino_PortentaMachineControl.h>
+#include <Arduino.h>
+#include "FlashAPILimits.h"
+
+#define MAX_PORTS 56 //Portenta Machine Control
 #define MAX_LOG_ENTRIES 100
 #define MAX_LOG_STRING_CHAR 256
 #define MAX_USERNAME 32
@@ -20,12 +23,36 @@ Version: 1.0.0
 #define MAX_SHARED_SECRET 32
 #define MAX_CALL_HOME_URL 128
 #define MAX_SIGNATURE 16
-//*******************************************************************
-//*******************************************************************
-//*******************************************************************
-const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH04302024";
-constexpr uint8_t DATA_SIGNATURE_UINT8[] = {0xAB, 0xCD, 0xEF, 0x01};
 
+constexpr int MAX_DESCRIPTION = 16;
+constexpr int MAX_STATE_TXT = 32;
+
+enum CIRCUIT_TYPE {
+    NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, CIRCUIT_TYPE_COUNT
+};
+
+enum PIN_TYPE {
+    ANALOG_INPUT, ANALOG_OUTPUT, DIGITAL_INPUT, DIGITAL_OUTPUT, PROGRAMMABLE_IO, PTEMP, HMI, ENCODER, PIN_TYPE_COUNT
+};
+
+//*******************************************************************
+//*******************************************************************
+//*******************************************************************
+const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH05112024";
+//constexpr uint8_t DATA_SIGNATURE_UINT8[] = {0xAB, 0xCD, 0xEF, 0x01};
+struct Ports{
+  int readPinNumber;
+  int writePinNumber;
+  PIN_TYPE pinType;
+  CIRCUIT_TYPE circuitType;
+  char pinDescription[MAX_DESCRIPTION + 1]; // Includes space for null terminator
+  float currentReading;
+  float lastReading;
+  char state[MAX_STATE_TXT + 1]; // Includes space for null terminator
+  bool isActive;
+  bool isSimulated;
+  time_t lastUpdated;
+};
 
 struct AdminSettings {
         char Admin_USERNAME[MAX_USERNAME+1];//plus end of line
@@ -45,7 +72,7 @@ struct AdminSettings {
         size_t currentLogIndex;
         time_t DATE_LAST_UPDATED;
         time_t DATE_LAST_REBOOT;
-        Port * ports[MAX_PORTS];
+        Ports ports[MAX_PORTS];
     };
 
 class PortManager {
@@ -53,6 +80,17 @@ private:
     AdminSettings settings; // Includes all settings and ports array
     int numPorts; // Number of ports managed
     bool isInitialized;
+    size_t getDataSizeWithSignature() const;
+    String OnePortToString(int i);
+    //deserializes from memory to AdminSettings
+    void deserialize(const uint8_t* src);
+    //serializes to memory AdminSettings
+    void serialize(uint8_t* dest) const; 
+    //calculate the total size of the AdminSettings Struct pls signature
+    size_t getDataSizeWithSignature();
+    void loadPortDefaults();
+    void setPortValues(int indexPort, bool isActive, bool isSimulated, int readPinNum, int writePinNum, PIN_TYPE pinType, CIRCUIT_TYPE circuitType, String pinDescription, float curReading, float lastReading, time_t currentTime, String stateStr);
+
 
 public:
     PortManager();
@@ -64,6 +102,9 @@ public:
     bool loadFromFlash();
     void initializeDefaults();
     void writeToFlash();
+    String AllPortsToString();
+    String pinTypeToString(PIN_TYPE type);
+    String circuitTypeToString(CIRCUIT_TYPE type);
 };
 
 #endif // PORT_MANAGER_H

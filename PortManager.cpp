@@ -8,16 +8,21 @@ Version: 1.0.0
 
 #include "PortManager.h"
 #include "LogManager.h"
+#include <sstream>
+#include <iomanip> // for std::setw
 
 PortManager::PortManager(){
-  //do nothing must call INIT
   isInitialized = false;
 }
 void PortManager::init() {
     if (!loadFromFlash()) {
+        LOG("FAILED Writing to flash.  Initiating Defaults");
         initializeDefaults();
+    }else{
+      //
+      DEBUG("LOADED FOUND MEMORY from FLASH!");
+      isInitialized = true;
     }
-    isInitialized = true;
 }
 PortManager& PortManager::getInstance() {
     static PortManager instance; // Guaranteed to be destroyed and instantiated on first use
@@ -25,16 +30,8 @@ PortManager& PortManager::getInstance() {
 }
 
 PortManager::~PortManager() {
-    writeToFlash();
-    // Iterate through the array and delete each Port object
-    if (settings.ports) {  // Ensure ports is not nullptr
-        for (int i = 0; i < MAX_PORTS; i++) {
-            if (settings.ports[i]) {  // Check if the pointer to the Port object is not nullptr
-                delete settings.ports[i];  // Delete the Port object
-                settings.ports[i] = nullptr;  // Set to nullptr after deletion
-            }
-        }
-    }
+    //assum we should write the current DB to flash but maybe not 
+    //writeToFlash();
 }
   //from the Portenta Machine Control manual
   /*Port Details
@@ -47,24 +44,18 @@ PortManager::~PortManager() {
   2 X Encoder Channels ABZ
   1 X RS-232/ RA-422/Rs-485 
   */
+
+
+
+
 void PortManager::initializeDefaults() {
-
+    DEBUG("SETTING SYSTEM DEFAULTS");
     try {
-        // Initialize each Port with appropriate constructor parameters
-        //port, pin, type, PIN_TYPE, CIRCUIT_TYPE, Description, Active
-        settings.ports[0] = new Port(0,0, ANALOG_INPUT, ONOFF, "Pin AI0", true);
-        settings.ports[1] = new Port(1,1, ANALOG_INPUT, ONOFF, "Pin AI1", true);
-        settings.ports[2] = new Port(2,2, ANALOG_INPUT, ONOFF, "Pin AI1", true);
-        settings.ports[3] = new Port(3,0, ANALOG_OUTPUT, ONOFF, "Pin AO0", true);
-        settings.ports[4] = new Port(4,1, ANALOG_OUTPUT, ONOFF, "Pin AO1", true);
-        settings.ports[5] = new Port(5,2, ANALOG_OUTPUT, ONOFF, "Pin AO2", true);
-        settings.ports[6] = new Port(6,3, ANALOG_OUTPUT, ONOFF, "Pin AO3", true);
-
 
         //set default Admin items
         strncpy(settings.Admin_USERNAME, "admin", sizeof(settings.Admin_USERNAME));
         //set default password
-         strncpy(settings.Admin_PASSWORD, "password", sizeof(settings.Admin_PASSWORD));
+        strncpy(settings.Admin_PASSWORD, "password", sizeof(settings.Admin_PASSWORD));
 
          //Default IP Address
          settings.IP_ADDRESS[0] = 192;
@@ -108,36 +99,355 @@ void PortManager::initializeDefaults() {
          // Initialize date fields
          settings.DATE_LAST_UPDATED = time(NULL);  
          settings.DATE_LAST_REBOOT = time(NULL);
-
+         LOG("LOADED SYSTEM DEFAULTS COMPLETE...writing settings to flash");
+        
+         //completed initializtion
+         isInitialized = true;
+         loadPortDefaults();
+         //write the current signature and settings to flash so its there next
+         writeToFlash();
     } catch (const std::exception& e) {
         // If an exception occurs, clean up already allocated ports
-        for (int j = 0; j < MAX_PORTS; ++j) {
-            delete settings.ports[j];  // Free individual Port object
-        }
         throw;  // Re-throw to handle the error further up the call stack
     }
 }
 
+void PortManager::loadPortDefaults(){
+
+        time_t currentTime = time(nullptr);
+
+        /*setPortValues(int indexPort, bool isActive, bool isSimulated, int readPinNum, int writePinNum, PIN_TYPE pinType, CIRCUIT_TYPE circuitType, String pinDescription, float curReading, float lastReading, time_t currentTime, String stateStr){
+        
+        8 X Digital Input Channels (0-24V)
+        8 X Digital Output Channels 24V power supply
+        3 X Analog Input (0-10V or 4-20mA input)
+        4 X Analog Output Channels (0-10V DC Max 20mA per channel)
+        12 X Digital Programmable channels
+        3 X Tenp Channels
+        2 X Encoder Channels ABZ
+        1 X RS-232/ RA-422/Rs-485
+        */ 
+        //Array value is the port number
+        //start of analog pins
+        setPortValues(0,true,false,0,-1,ANALOG_INPUT,ONOFF,"Pin AI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(1,false,false,1,-1,ANALOG_INPUT,ONOFF,"Pin AI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(2,false,false,2,-1,ANALOG_INPUT,ONOFF,"Pin AI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(3,true,false,-1,0,ANALOG_OUTPUT,ONOFF,"AO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(4,false,false,-1,1,ANALOG_OUTPUT,ONOFF,"AO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(5,false,false,-1,2,ANALOG_OUTPUT,ONOFF,"AO_02", 0.00,0.00,currentTime,"INIT DEFAULT");
+        setPortValues(6,false,false,-1,3,ANALOG_OUTPUT,ONOFF,"AO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
+
+        //start of digital input pins 0-7
+        setPortValues(7,true,false,DIN_READ_CH_PIN_00,-1,DIGITAL_INPUT,ONOFF,"DI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(8,false,false,DIN_READ_CH_PIN_01,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(9,false,false,DIN_READ_CH_PIN_02,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(10,false,false,DIN_READ_CH_PIN_03,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_03", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(11,false,false,DIN_READ_CH_PIN_04,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_04", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(12,false,false,DIN_READ_CH_PIN_05,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_05", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(13,false,false,DIN_READ_CH_PIN_06,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_06", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(14,false,false,DIN_READ_CH_PIN_07,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_07", 0.00,0.00, currentTime,"INIT DEFAULT");
+        //end of digital input pins
+         //start of digital output pins 15-22
+         setPortValues(15,true,false,-1,0,DIGITAL_OUTPUT,ONOFF,"DO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(16,false,false,-1,1,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(17,false,false,-1,2,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_02", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(18,false,false,-1,3,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(19,false,false,-1,4,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_04", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(20,false,false,-1,5,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_05", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(21,false,false,-1,6,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_06", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(22,false,false,-1,7,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_07", 0.00,0.00, currentTime,"INIT DEFAULT");
+         //end of the digital output pins
+
+         //start of 12 digital PROGRAMMABLE_IO pins
+         setPortValues(23,true,false,IO_WRITE_CH_PIN_00,IO_READ_CH_PIN_00,PROGRAMMABLE_IO,ONOFF,"PIO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(24,false,false,IO_WRITE_CH_PIN_01,IO_READ_CH_PIN_01,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(25,false,false,IO_WRITE_CH_PIN_02,IO_READ_CH_PIN_02,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_02", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(26,false,false,IO_WRITE_CH_PIN_03,IO_READ_CH_PIN_03,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(27,false,false,IO_WRITE_CH_PIN_04,IO_READ_CH_PIN_04,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_04", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(28,false,false,IO_WRITE_CH_PIN_05,IO_READ_CH_PIN_05,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_05", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(29,false,false,IO_WRITE_CH_PIN_06,IO_READ_CH_PIN_06,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_06", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(30,false,false,IO_WRITE_CH_PIN_07,IO_READ_CH_PIN_07,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_07", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(31,false,false,IO_WRITE_CH_PIN_08,IO_READ_CH_PIN_08,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_08", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(32,false,false,IO_WRITE_CH_PIN_09,IO_READ_CH_PIN_09,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_09", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(33,false,false,IO_WRITE_CH_PIN_10,IO_READ_CH_PIN_10,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_10", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(34,false,false,IO_WRITE_CH_PIN_11,IO_READ_CH_PIN_11,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_11", 0.00,0.00, currentTime,"INIT DEFAULT");
+         //END programmable IO
+         //start of digital HMI pins
+         /*
+TXP (Transmit Positive)
+
+    TXP refers to the "Transmit Positive" line in a differential pair of signals. It is one half of a pair where the other is TXN (Transmit Negative).
+    In differential signaling, TXP carries the inverse signal of TXN. The purpose of using differential signals like TXP and TXN is to enhance the reliability and integrity of data transmission, especially over longer distances or in environments with high electromagnetic interference (EMI).
+
+TXN (Transmit Negative)
+
+    TXN refers to the "Transmit Negative" line. It complements the TXP by carrying an inverted version of the same signal sent on the TXP line.
+    The differential receiver at the other end of the line measures the voltage difference between TXP and TXN. This configuration helps to cancel out any noise that might be picked up along the transmission path, as the noise would typically affect both TXP and TXN equally and thus be subtracted out in the differential measurement.
+         */
+         setPortValues(35,true,false,1,1,HMI,NOT_ASSIGNED,"TXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(36,true,false,-1,-1,HMI,NOT_ASSIGNED,"TXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+         
+         
+
+        /*
+        RXP (Receive Positive)
+
+        RXP is the positive line of a differential pair used in the reception of signals. It receives the direct signal transmitted by the TXP line of the sending device.
+
+        RXN (Receive Negative)
+
+        RXN is the negative line of the differential pair and receives the inverse of the signal transmitted by the TXN line of the sending device.
+        */
+        setPortValues(37,true,false,1,1,HMI,NOT_ASSIGNED,"RXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(38,true,false,-1,-1,HMI,NOT_ASSIGNED,"RXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+
+        /*
+        Wiring: CAN bus typically involves a twisted pair cable for CANH and CANL to improve resistance against EMI.
+        Termination: To reduce reflections and ensure signal integrity, the CAN bus should be terminated at both ends of the main cable with 120-ohm resistors.
+        */
+
+        setPortValues(39,true,false,1,1,HMI,NOT_ASSIGNED,"CANH", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(40,true,false,-1,-1,HMI,NOT_ASSIGNED,"CANL", 0.00,0.00, currentTime,"INIT DEFAULT");
+
+        //End of digital HMI pins 
+
+        //start of temp probe pins
+        setPortValues(41,true,false,0,0,PTEMP,CTEMP,"TP-00", 0.00,0.00,currentTime,"INIT DEFAULT");
+
+        
+        setPortValues(42,false,false,1,1,PTEMP,NOT_ASSIGNED,"TN-00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(43,false,false,2,2,PTEMP,NOT_ASSIGNED,"RTD-00", 0.00,0.00, currentTime,"INIT DEFAULT");
+
+        setPortValues(44,false,false,3,3,PTEMP,NOT_ASSIGNED,"TP-01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(45,false,false,4,4,PTEMP,NOT_ASSIGNED,"TN-01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(46,false,false,5,5,PTEMP,NOT_ASSIGNED,"RTD-01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        
+        setPortValues(47,false,false,6,6,PTEMP,NOT_ASSIGNED,"TP-02", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(48,false,false,7,7,PTEMP,NOT_ASSIGNED,"TN-02", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(49,false,false,8,8,PTEMP,NOT_ASSIGNED,"RTD-02", 0.00,0.00, currentTime,"INIT DEFAULT");
+        //end temp probes
+        
+        //start of encoders pins
+        setPortValues(50,true,false,0,0,ENCODER,NOT_ASSIGNED,"A0", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(51,true,false,1,1,ENCODER,NOT_ASSIGNED,"B0", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(52,true,false,2,2,ENCODER,NOT_ASSIGNED,"Z0", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(53,true,false,3,3,ENCODER,NOT_ASSIGNED,"A1", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(54,true,false,4,4,ENCODER,NOT_ASSIGNED,"B1", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(55,true,false,5,5,ENCODER,NOT_ASSIGNED,"Z1", 0.00,0.00, currentTime,"INIT DEFAULT");
+     //end of encoders pins
+}
+void PortManager::setPortValues(int indexPort, bool isActive, bool isSimulated, int readPinNum,int writePinNum, PIN_TYPE pinType, CIRCUIT_TYPE circuitType, String pinDescription, float curReading, float lastReading, time_t currentTime, String stateStr){
+
+        if(indexPort < 0 || indexPort > MAX_PORTS){
+            String errMsg = "****** ARRAY VIOLATION ****** array index invalid " + String(indexPort);
+            throw std::runtime_error(errMsg.c_str());
+        }
+        settings.ports[indexPort].isActive = isActive;
+        settings.ports[indexPort].isSimulated = isSimulated;
+        settings.ports[indexPort].readPinNumber = readPinNum;
+        settings.ports[indexPort].writePinNumber = writePinNum;
+        settings.ports[indexPort].pinType = pinType;
+        settings.ports[indexPort].circuitType = circuitType;
+        strcpy(settings.ports[indexPort].pinDescription, pinDescription.c_str());
+        settings.ports[indexPort].currentReading = curReading;
+        settings.ports[indexPort].lastReading = lastReading;
+        settings.ports[indexPort].lastUpdated = currentTime;
+        strcpy(settings.ports[indexPort].state,stateStr.c_str());
+}
 
 void PortManager::writeToFlash() {
     // Serialization logic here
+    DEBUG("Writting to flash init...");
 
     if(!isInitialized){
         throw std::runtime_error("****** NOT INITIALIZED ****** UNABLE to WRITE to flash");
     }
 
-    throw std::runtime_error("****** NOT IMPLEMETED ****** WRITE to flash");
+    //create a buffer the size of the AdminSettings + DATA_SIGNATURE
+    size_t m_MemoryRequired = getDataSizeWithSignature();
+    char buffer[m_MemoryRequired] {};
+
+    //copy in the DATA_SIGNATURE
+    memcpy(buffer, &DATA_SIGNATURE, sizeof(DATA_SIGNATURE));
+    //copy in the main admin settings payload
+    memcpy(buffer + sizeof(DATA_SIGNATURE), &settings, sizeof(AdminSettings));
+
+    auto [flashSize, startAddress, iapSize] = getFlashIAPLimits();
+    FlashIAPBlockDevice blockDevice(startAddress, iapSize);
+
+    int result = blockDevice.init();
+    if (result != 0) {
+      throw std::runtime_error("****** BLOCK DEVICE ****** UNABLE to INIT to device");
+    }
+
+    const size_t eraseSize = blockDevice.get_erase_size();
+    blockDevice.erase(0, eraseSize);
+
+    result = blockDevice.program(buffer, 0, m_MemoryRequired);
+    if (result != 0) {
+      float dataSizeInMB = getDataSizeWithSignature() / (float)(1024 * 1024);
+      String errMsg = "***** FLASH BLOCK DEVICE ***** Error writing to blockdevice: " + String(dataSizeInMB);
+      blockDevice.deinit();
+      throw std::runtime_error(errMsg.c_str());
+    } else {
+      DEBUG("Signature and Settings write to flash COMPLETE.");
+      blockDevice.deinit();
+    }
 }
+
+size_t PortManager::getDataSizeWithSignature() const {
+    size_t totalDataSize = sizeof(DATA_SIGNATURE) + sizeof(AdminSettings);
+    size_t programSize = 32;  // as indicated by your testCases
+    if (totalDataSize % programSize != 0) {
+        totalDataSize += programSize - (totalDataSize % programSize);
+    }
+    return totalDataSize;
+}
+
 
 bool PortManager::loadFromFlash() {
     // Simulate loading logic
     // if loading fails:
-    throw std::runtime_error("****** NOT IMPLEMETED ****** READ from flash");
-    return false; // Return false to simulate failed load
+    DEBUG("LOAD FROM FLASH...");
+  
+
+    //GET FLASH LIMITS HERE
+    //FlashIAPLimits limits = getFlashIAPLimits();  // Get the current flash memory limits
+    auto [flashSize, startAddress, iapSize] = getFlashIAPLimits();
+
+    String flashStringData = "Flash Size: " + String(flashSize) + "\nFlash Available: " + String(iapSize) + "\nStart Address: " + String(startAddress);
+    DEBUG(flashStringData);
+
+    if (iapSize == 0) {
+        throw std::runtime_error("****** FLASH ERROR ****** No memory available."); // If no available memory, 
+        //throw load error indicating load failure of flash at boot
+    }
+
+    FlashIAPBlockDevice blockDevice(startAddress, iapSize);
+
+    DEBUG("Init FLASH...");
+
+    int result = blockDevice.init();
+    if (result != 0) {
+        throw std::runtime_error("***** FLASH ERROR ****** unable to read from block device"); // If no available memory, 
+    }
+    size_t m_MemSizeRequired = getDataSizeWithSignature();
+    char buffer[m_MemSizeRequired] = {0};
+    
+    DEBUG("READING FLASH...");
+    result = blockDevice.read(buffer, 0,m_MemSizeRequired);
+    
+    if (result != 0) {
+        blockDevice.deinit();
+        throw std::runtime_error("***** FLASH ERROR ****** unable to read from block device"); 
+    }
+
+    //made it this far so need to check the signature
+    DEBUG("Checking Signature");
+    if(memcmp(buffer, DATA_SIGNATURE, sizeof(DATA_SIGNATURE)) != 0){
+      //DID NOT FIND DATA_SIGNATURE
+      DEBUG("DID NOT FIND DATA_SIGNATURE");
+      return false;
+    }
+
+    //read the adminSettings from flash 
+    // Copy the read settings to the settings variable
+    memcpy(&settings, buffer + sizeof(DATA_SIGNATURE), sizeof(AdminSettings));
+
+    DEBUG("READING FLASH - COMPLETE");
+    return true;  // Signature does not match or data corrupted
 }
 
-#include <sstream>
-#include <iomanip> // for std::setw
+size_t PortManager::getDataSizeWithSignature() {
+    size_t totalDataSize = sizeof(DATA_SIGNATURE) + sizeof(AdminSettings);
+    size_t programSize = 32;  // as indicated by testCases
+    if (totalDataSize % programSize != 0) {
+        totalDataSize += programSize - (totalDataSize % programSize);
+    }
+
+    DEBUG("Reading from flash calculated.\ntotalDataSize: " + String(totalDataSize));
+    DEBUG("programSize: " + String(programSize));
+    return totalDataSize;
+}
+
+//function that takes memory of serialized AdminSettings and applies it to the struct.
+/*
+void PortManager::deserialize(const uint8_t* src) {
+    // Example deserialization logic assuming src points to a byte array
+    // containing the serialized form of AdminSettings followed by Port data.
+
+    // Deserialize AdminSettings
+    const AdminSettings* settingsPtr = reinterpret_cast<const AdminSettings*>(src);
+    settings = *settingsPtr; // Assuming straightforward POD (plain old data) copy is sufficient
+
+    src += sizeof(AdminSettings); // Move the pointer past the AdminSettings data
+
+    // Deserialize each Port - This is simplified and assumes each port can be serialized as is
+    for (int i = 0; i < MAX_PORTS; i++) {
+        const Port* portPtr = reinterpret_cast<const Port*>(src);
+        if (settings.ports[i] != nullptr) {
+            delete settings.ports[i]; // Clean up old port if exists
+        }
+        settings.ports[i] = new Port(*portPtr); // Create a new port object from the serialized data
+        src += sizeof(Port); // Move the pointer past this Port data
+    }
+}
+*/
+
+//writes to memory the signature and then the payload
+/*
+void PortManager::serialize(uint8_t* dest) const {
+    // Start by copying the data signature
+    //const char DATA_SIGNATURE[] = "DAPHISH04302024"; // Ensure this is defined appropriately
+    const size_t SIGNATURE_SIZE = sizeof(DATA_SIGNATURE) - 1; // -1 to exclude the null terminator
+
+    memcpy(dest, DATA_SIGNATURE, SIGNATURE_SIZE);
+    dest += SIGNATURE_SIZE;
+
+    // Serialize AdminSettings
+    memcpy(dest, &settings, sizeof(AdminSettings));
+    dest += sizeof(AdminSettings);
+
+    // Serialize each Port
+    for (int i = 0; i < MAX_PORTS; i++) {
+        if (settings.ports[i] != nullptr) {
+            memcpy(dest, settings.ports[i], sizeof(Port));
+            dest += sizeof(Port); // Move the pointer past the serialized Port
+        }
+    }
+}
+*/
+String PortManager::AllPortsToString() {
+    String result;
+    result.reserve(1024); // Reserve enough space to avoid frequent reallocations
+
+    result += "PortManager Port Summary:\n";
+    for (int i = 0; i < MAX_PORTS; i++) {    
+      result += "Port " + String(i) + ": ";
+      result += OnePortToString(i) + "\n"; // Utilize the Port's toString method
+    }
+    return result;
+}
+String PortManager::OnePortToString(int i) {
+  char buffer[256]; // Allocate a buffer for the string
+  snprintf(buffer, sizeof(buffer), 
+    "Port Number: %d, Read Pin: %d, Write Pin: %d, Pin Type: %s, Circuit Type: %s, Description: %s, Current Reading: %.2f, Last Reading: %.2f, State: %s, Active: %s, Simulated: %s, Last Updated: %s",
+             i, 
+             settings.ports[i].readPinNumber, 
+             settings.ports[i].writePinNumber, 
+             pinTypeToString(settings.ports[i].pinType).c_str(), 
+             circuitTypeToString(settings.ports[i].circuitType).c_str(), 
+             settings.ports[i].pinDescription, 
+             settings.ports[i].currentReading, 
+             settings.ports[i].lastReading, 
+             settings.ports[i].state, 
+             settings.ports[i].isActive ? "Yes" : "No", 
+             settings.ports[i].isSimulated ? "Yes" : "No", 
+             LogManager::getInstance().timeToString(settings.ports[i].lastUpdated).c_str());
+    return String(buffer);
+    
+}
+
 
 String PortManager::toString() {
 
@@ -186,4 +496,32 @@ String PortManager::toHTML() {
        << "<p><strong>Last Reboot:</strong> " << ctime(&settings.DATE_LAST_REBOOT) << "</p>";
     return String(ss.str().c_str());
 }
+//ANALOG_INPUT, ANALOG_OUTPUT, DIGITAL_INPUT, DIGITAL_OUTPUT, PROGRAMMABLE_IO, PTEMP, HMI, ENCODER, PIN_TYPE_COUNT
+String PortManager::pinTypeToString(PIN_TYPE type){
+  switch (type) {
+        case ANALOG_INPUT: return "ANALOG INPUT";
+        case ANALOG_OUTPUT: return "ANALOG_OUTPUT";
+        case DIGITAL_INPUT: return "DIGITAL_INPUT";
+        case DIGITAL_OUTPUT: return "DIGITAL_OUTPUT";
+        case PROGRAMMABLE_IO: return "PROGRAMMABLE_IO";
+        case PTEMP: return "PTEMP";
+        case HMI: return "HMI";
+        case ENCODER: return "ENCODER";
+        default: return "UNKNOWN";
+    }
+}
 
+//NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, CIRCUIT_TYPE_COUNT
+String PortManager::circuitTypeToString(CIRCUIT_TYPE type){
+  switch (type) {
+        case NOT_ASSIGNED: return "ON OFF 0-24V";
+        case ONOFF: return "ON OFF 0-24V";
+        case MA420: return "4-20 mA";
+        case CTEMP: return "Temperature";
+        case VALVE: return "Valve Reading";
+        case FILL: return "Tank Fill Level";
+        case PULSE: return "Pulse";
+        default: return "UNKNOWN";
+    }
+
+}

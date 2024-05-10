@@ -12,9 +12,10 @@ LogManager& LogManager::getInstance() {
     return instance;
 }
 
-void LogManager::init() {
-   // This could setup necessary log file or prep the system for logging
-     //ADD TIME OUT ??
+void LogManager::init(bool setDebug) {
+    // This could setup necessary log file or prep the system for logging
+    m_debug = setDebug;
+    //ADD TIME OUT
     Serial.begin(9600); // Start serial communication for logging
     unsigned long startTime = millis();
     while (!Serial && (millis() - startTime < 5000)) {
@@ -35,7 +36,21 @@ void LogManager::writeLog(String message) {
         Serial.println(fullMessage);
     }
 }
+void LogManager::writeDebugLog(String message) {
+    if(m_debug == false){
+      //don't write this 
+      return;
+    }
+    char timestamp[20];  // For YYYY-MM-DD HH:MM:SS format
+    time_t now = time(NULL);
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    
+    String fullMessage = String(timestamp) + ":" + message;
 
+    if (Serial) {
+        Serial.println(fullMessage);
+    }
+}
 String LogManager::timeToString(time_t t) {
     char timestamp[20];  // For YYYY-MM-DD HH:MM:SS format
     strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&t));

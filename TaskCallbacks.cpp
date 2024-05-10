@@ -8,6 +8,7 @@ Version: 1.0.0
 
 #include "TaskCallbacks.h"
 #include "LogManager.h"
+#include "FlashAPILimits.h"
 #include <vector>
 
 mbed_stats_heap_t heapStatsHistory[MAX_HEAPS];  // Array to store last 5 heap statistics
@@ -62,6 +63,17 @@ void freeSomeMemory() {
 // Define retryAllocation if you decide it's appropriate for your application
 // void retryAllocation() { ... }
 
+void printSettings(){
+   LOG("CALLBACK -- Admin Settings");
+   LOG(PortManager::getInstance().AllPortsToString());
+
+}
+
+void writeSettingsToFlash(){
+    LOG("CALLBACK -- WRITING FLASH");
+    PortManager::getInstance().writeToFlash();
+}
+
 
 void checkNetwork() {
     // Example function that checks network status
@@ -98,6 +110,15 @@ void checkMemory() {
 
     // Print all heap stats in the history
     printHeapStatsHistory();
+    printFlashStats();
+}
+
+void printFlashStats(){
+
+  FlashIAPLimits limits = getFlashIAPLimits();  // Get the current flash memory limits
+
+    String flashStringData = "Read flash memory. \nFlash Size: " + String(limits.flash_size) + "\nFlash Available: " + String(limits.available_size) + "\nStart Address: " + String(limits.start_address);
+    LOG(flashStringData);
 }
 
 void printHeapStatsHistory() {
