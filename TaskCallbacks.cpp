@@ -7,9 +7,7 @@ Version: 1.0.0
 */
 
 #include "TaskCallbacks.h"
-#include "LogManager.h"
-#include "FlashAPILimits.h"
-#include <vector>
+
 
 mbed_stats_heap_t heapStatsHistory[MAX_HEAPS];  // Array to store last 5 heap statistics
 int heapStatsIndex = 0;  // Index for circular buffer
@@ -77,7 +75,10 @@ void writeSettingsToFlash(){
 
 void checkNetwork() {
     // Example function that checks network status
-    LogManager::getInstance().writeLog("Checking network status...");
+
+    if (!NetworkManager::getInstance().checkNetworkConnection()) {
+        LOG("******************Network check failed, trying to reconnect...");
+    }
 }
 
 void checkSerialConnection() {

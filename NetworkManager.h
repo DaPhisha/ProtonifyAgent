@@ -1,21 +1,33 @@
+/*
+File: NetworkManager.h
+Date Created: May 10, 2024
+Authors: DaPhisha
+Description: Implementation of the NetworkManager class which handles the lifecycle and state management of network connections (wifi and ethernet in current implementation).
+Version: 1.0.0
+*/
 #ifndef NETWORK_MANAGER_H
 #define NETWORK_MANAGER_H
-
-#include <Ethernet.h>
 #include <WiFi.h>
-#include "AdminSettings.h"  // Ensure this file contains the AdminSettings struct
+#include <PortentaEthernet.h>
+#include "PortManager.h"
 
 class NetworkManager {
 private:
     EthernetClient ethClient;
     WiFiClient wifiClient;
-    AdminSettings* settings;
     bool isEthernetConnected;
     bool isWiFiConnected;
 
+    // Private constructor for singleton pattern
+    NetworkManager();
+
 public:
-    // Constructor
-    explicit NetworkManager(AdminSettings* config);
+    // Deleted copy constructor and assignment operator for singleton enforcement
+    NetworkManager(const NetworkManager&) = delete;
+    NetworkManager& operator=(const NetworkManager&) = delete;
+
+    // Method to get the singleton instance of NetworkManager
+    static NetworkManager& getInstance();
 
     // Initialize network interfaces
     bool initializeNetwork();
@@ -28,6 +40,11 @@ public:
 
     // Shutdown network interfaces
     void shutdownNetwork();
+
+    // Check if the network is still connected
+    bool checkNetworkConnection();
 };
 
-#endif // NETWORK_MANAGER_H
+#endif // NETWORK_MANAGER_ 
+
+

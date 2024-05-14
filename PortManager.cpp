@@ -4,6 +4,15 @@ Date Created: April 29, 2024
 Authors: DaPhisha
 Description: Implementation of the PortManager class which handles the lifecycle and state management of Port objects, including interactions with flash memory for persistence.
 Version: 1.0.0
+ //see stm32h747xx.h
+      
+      Device Peripheral Access Layer Header File.
+            This file contains:
+             - Data structures and the address mapping for all peripherals
+             - Peripheral's registers declarations and bits definition
+             - Macros to access peripheral's registers hardware
+      
+      //DebugMonitor_IRQn 
 */
 
 #include "PortManager.h"
@@ -56,6 +65,11 @@ void PortManager::initializeDefaults() {
         strncpy(settings.Admin_USERNAME, "admin", sizeof(settings.Admin_USERNAME));
         //set default password
         strncpy(settings.Admin_PASSWORD, "password", sizeof(settings.Admin_PASSWORD));
+
+
+        strncpy(settings.WIFI_SSID, "HAL2000", sizeof(settings.WIFI_SSID));
+        strncpy(settings.WIFI_PASSWORD, "password", sizeof(settings.WIFI_PASSWORD));
+
 
          //Default IP Address
          settings.IP_ADDRESS[0] = 192;
@@ -370,53 +384,6 @@ size_t PortManager::getDataSizeWithSignature() {
     return totalDataSize;
 }
 
-//function that takes memory of serialized AdminSettings and applies it to the struct.
-/*
-void PortManager::deserialize(const uint8_t* src) {
-    // Example deserialization logic assuming src points to a byte array
-    // containing the serialized form of AdminSettings followed by Port data.
-
-    // Deserialize AdminSettings
-    const AdminSettings* settingsPtr = reinterpret_cast<const AdminSettings*>(src);
-    settings = *settingsPtr; // Assuming straightforward POD (plain old data) copy is sufficient
-
-    src += sizeof(AdminSettings); // Move the pointer past the AdminSettings data
-
-    // Deserialize each Port - This is simplified and assumes each port can be serialized as is
-    for (int i = 0; i < MAX_PORTS; i++) {
-        const Port* portPtr = reinterpret_cast<const Port*>(src);
-        if (settings.ports[i] != nullptr) {
-            delete settings.ports[i]; // Clean up old port if exists
-        }
-        settings.ports[i] = new Port(*portPtr); // Create a new port object from the serialized data
-        src += sizeof(Port); // Move the pointer past this Port data
-    }
-}
-*/
-
-//writes to memory the signature and then the payload
-/*
-void PortManager::serialize(uint8_t* dest) const {
-    // Start by copying the data signature
-    //const char DATA_SIGNATURE[] = "DAPHISH04302024"; // Ensure this is defined appropriately
-    const size_t SIGNATURE_SIZE = sizeof(DATA_SIGNATURE) - 1; // -1 to exclude the null terminator
-
-    memcpy(dest, DATA_SIGNATURE, SIGNATURE_SIZE);
-    dest += SIGNATURE_SIZE;
-
-    // Serialize AdminSettings
-    memcpy(dest, &settings, sizeof(AdminSettings));
-    dest += sizeof(AdminSettings);
-
-    // Serialize each Port
-    for (int i = 0; i < MAX_PORTS; i++) {
-        if (settings.ports[i] != nullptr) {
-            memcpy(dest, settings.ports[i], sizeof(Port));
-            dest += sizeof(Port); // Move the pointer past the serialized Port
-        }
-    }
-}
-*/
 String PortManager::AllPortsToString() {
     String result;
     result.reserve(1024); // Reserve enough space to avoid frequent reallocations

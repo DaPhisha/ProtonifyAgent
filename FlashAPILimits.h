@@ -14,7 +14,6 @@
 #include <Arduino.h>
 #include <FlashIAP.h>
 #include <FlashIAPBlockDevice.h>
-
 using namespace mbed;
 
 // A helper struct for FlashIAP limits

@@ -8,15 +8,14 @@ Version: 1.0.0
 
 #ifndef PORT_MANAGER_H
 #define PORT_MANAGER_H
-
 #include <Arduino_PortentaMachineControl.h>
 #include <Arduino.h>
 #include "FlashAPILimits.h"
-
 #define MAX_PORTS 56 //Portenta Machine Control
 #define MAX_LOG_ENTRIES 100
 #define MAX_LOG_STRING_CHAR 256
 #define MAX_USERNAME 32
+#define MAX_SSID 32
 #define MAX_PASSWORD 32
 #define MAX_SERIAL 26
 #define MAX_MODEL 32
@@ -38,7 +37,7 @@ enum PIN_TYPE {
 //*******************************************************************
 //*******************************************************************
 //*******************************************************************
-const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH05112024";
+const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH05132024";
 //constexpr uint8_t DATA_SIGNATURE_UINT8[] = {0xAB, 0xCD, 0xEF, 0x01};
 struct Ports{
   int readPinNumber;
@@ -57,6 +56,8 @@ struct Ports{
 struct AdminSettings {
         char Admin_USERNAME[MAX_USERNAME+1];//plus end of line
         char Admin_PASSWORD[MAX_PASSWORD+1];//plus end of line
+        char WIFI_SSID[MAX_SSID+1];//plus end of line
+        char WIFI_PASSWORD[MAX_PASSWORD+1];//plus end of line
         uint8_t IP_ADDRESS[4];//always four no end of line
         uint8_t GATEWAY[4];//always four no end of line
         uint8_t DNS[4];//always four no end of line
@@ -77,22 +78,16 @@ struct AdminSettings {
 
 class PortManager {
 private:
-    AdminSettings settings; // Includes all settings and ports array
     int numPorts; // Number of ports managed
     bool isInitialized;
     size_t getDataSizeWithSignature() const;
     String OnePortToString(int i);
-    //deserializes from memory to AdminSettings
-    void deserialize(const uint8_t* src);
-    //serializes to memory AdminSettings
-    void serialize(uint8_t* dest) const; 
     //calculate the total size of the AdminSettings Struct pls signature
     size_t getDataSizeWithSignature();
     void loadPortDefaults();
     void setPortValues(int indexPort, bool isActive, bool isSimulated, int readPinNum, int writePinNum, PIN_TYPE pinType, CIRCUIT_TYPE circuitType, String pinDescription, float curReading, float lastReading, time_t currentTime, String stateStr);
-
-
 public:
+    AdminSettings settings; // Includes all settings and ports array
     PortManager();
     ~PortManager();
     void init(); 

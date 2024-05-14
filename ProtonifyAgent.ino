@@ -11,6 +11,8 @@
 #include "EventScheduler.h"
 #include "TaskCallbacks.h"
 #include "PortManager.h"
+#include "NetworkManager.h"
+#include "AdminServerManager.h"
 
 #define MAX_EVENTS 10  // Pin Reference
 #define MASTER_DEBUG true
@@ -23,12 +25,13 @@ EventScheduler scheduler(MAX_EVENTS);
 //init Network Interface (wifi) 
 //init the etherner NOTE for WIFI would need different library
 EthernetUDP ntpUDP;
+AdminServerManager m_webServer;
+
 
 //init the time client
 NTPClient timeClient(ntpUDP, "pool.ntp.org");
 time_t systemStartTime;//global to measure elapse refresh rates
 
-//ConfigurationManager configManager;
 
 void setup() {
     LogManager& logManager = LogManager::getInstance(); // Obtain the global LogManager instance
@@ -36,10 +39,11 @@ void setup() {
     try{
        //Task Scheduler add tasks timeout and callback - REMOVE FOR RELEASE
       scheduler.addTask(300000, checkMemory);
+      scheduler.addTask(300000, checkNetwork);
       //periodically write the current settings to flash - REMOVE FOR RELEASE 
-      scheduler.addTask(600000,writeSettingsToFlash);
+      //scheduler.addTask(600000,writeSettingsToFlash);
       //print settings - REMOVE FOR RELEASE
-      scheduler.addTask(600001, printSettings);
+      //scheduler.addTask(600001, printSettings);
 
       //port manager init
       PortManager& portManager = PortManager::getInstance(); // Automatically loads or initializes ports
@@ -49,11 +53,16 @@ void setup() {
       DEBUG(portManager.toString());
     
       //Print out port settings
-      LOG(portManager.AllPortsToString()); 
+      //LOG(portManager.AllPortsToString()); 
 
       //network manager
-
+      NetworkManager& networkManager = NetworkManager::getInstance();
+      if (!networkManager.initializeNetwork()) {
+        LOG("Failed to initialize network.");
+      }
       //time manager
+      //Start the admin Web server
+      m_webServer.init();
 
       //Set Pin MOdes and Led Modes
       // pinMode(LED_BUILTIN, OUTPUT);
@@ -80,7 +89,8 @@ void loop() {
       // Main Loop (M7)
       //TASK SCHEDULER
       scheduler.run(); // Run scheduled tasks
-      
+      //process any client requests.
+      m_webServer.handleClient();
       //processM7Tasks();
       // Sensor Loop (M4)
       //processM4Tasks();
