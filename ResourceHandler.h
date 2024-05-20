@@ -15,9 +15,11 @@ class ResourceHandler {
 public:
     static const char* getCSS();
     static const char* getJavascript();
-    static const char* getHeader();
+    static const char* getHeader(String title);
     static const char* getFooter();
     static const char* getLoginCard();
+    static const char* getHeaderMenu();
+    static const char* getStatCard(String title, String statValue);
 };
 
 #endif // RESOURCE_HANDLER_H

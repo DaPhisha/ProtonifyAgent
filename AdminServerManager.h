@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include "PortManager.h"
 #include "LogManager.h"
+#include "FlashAPILimits.h"
 #define TOKEN_LENGTH 32 
 #define HTTP_SERVER_PORT 80
 #define DASHBOARD_REFRESH 3000 //miliseconds to refresh dashboard
@@ -26,21 +27,30 @@ struct CallHomeResponse {
 struct RouteHandler {
     String method;
     String path;
-    void (*handler)(EthernetClient& client, const String& request);
+    void (*handler)(EthernetClient &client, const String &request, int contentLength, const String &authToken);
 };
-
 class AdminServerManager {
 private:
     RouteHandler* handlers;
     int m_handlersCount;
 
     //ANY function called from within a static function must also be static
-    static void handleRoot(EthernetClient& client, const String& request);
-    static void handleAdmin(EthernetClient& client, const String& request);
-    static void handleCSS(EthernetClient& client, const String& request);
-    static void handleJS(EthernetClient& client, const String& request);
+    static void handleRoot(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleHome(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleAdmin(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void processAdmin(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleCSS(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleJS(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleLogin(EthernetClient& client, const String& request,int contentLength, const String &authToken); 
+    static void handleLogOut(EthernetClient& client, const String& request,int contentLength, const String &authToken); 
     static String getUptimeString();
-    String generateRandomToken();
+    static String generateRandomToken();
+    static String urlDecode(const String &str);
+    static int getContentLength(String requestString);
+    static String getPostData(int contentLength, const String &request);
+    static String extractValueFromPostData(String postData, String variableName);
+    static void handleError(EthernetClient& client, int errorCode, String errorMessage);
+    static void handleHomeLandingPage(EthernetClient& client, const String& request, String user_message);
     /*
     void serveMainPage(EthernetClient& client, const String &message);
     void serveLoginPage(EthernetClient& client, const String &message);

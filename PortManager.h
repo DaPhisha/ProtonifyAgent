@@ -22,9 +22,12 @@ Version: 1.0.0
 #define MAX_SHARED_SECRET 32
 #define MAX_CALL_HOME_URL 128
 #define MAX_SIGNATURE 16
-
 constexpr int MAX_DESCRIPTION = 16;
 constexpr int MAX_STATE_TXT = 32;
+//*******************************************************************
+//*******************************************************************
+//*******************************************************************
+const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH05182024";
 
 enum CIRCUIT_TYPE {
     NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, CIRCUIT_TYPE_COUNT
@@ -34,10 +37,7 @@ enum PIN_TYPE {
     ANALOG_INPUT, ANALOG_OUTPUT, DIGITAL_INPUT, DIGITAL_OUTPUT, PROGRAMMABLE_IO, PTEMP, HMI, ENCODER, PIN_TYPE_COUNT
 };
 
-//*******************************************************************
-//*******************************************************************
-//*******************************************************************
-const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH05132024";
+
 //constexpr uint8_t DATA_SIGNATURE_UINT8[] = {0xAB, 0xCD, 0xEF, 0x01};
 struct Ports{
   int readPinNumber;
@@ -100,6 +100,11 @@ public:
     String AllPortsToString();
     String pinTypeToString(PIN_TYPE type);
     String circuitTypeToString(CIRCUIT_TYPE type);
+    int getActivePortCount();
+    String ipToString(const uint8_t ip[4]);
+    bool stringToIP(const String &ipString, uint8_t ip[4]);
+    bool stringToMAC(const String &macString, byte mac[6]);
+    String macToString(const byte mac[6]);
 };
 
 #endif // PORT_MANAGER_H

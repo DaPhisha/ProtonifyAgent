@@ -395,6 +395,17 @@ String PortManager::AllPortsToString() {
     }
     return result;
 }
+
+int PortManager::getActivePortCount(){
+    int counter = 0;
+    for(int i = 0; i < MAX_PORTS; i++){
+      if(settings.ports[i].isActive == true){
+        counter ++;
+      }
+    }
+    return counter;
+}
+
 String PortManager::OnePortToString(int i) {
   char buffer[256]; // Allocate a buffer for the string
   snprintf(buffer, sizeof(buffer), 
@@ -492,3 +503,43 @@ String PortManager::circuitTypeToString(CIRCUIT_TYPE type){
     }
 
 }
+
+String PortManager::ipToString(const uint8_t ip[4]) {
+    return String(ip[0]) + "." + String(ip[1]) + "." + String(ip[2]) + "." + String(ip[3]);
+}
+
+bool PortManager::stringToIP(const String &ipString, uint8_t ip[4]) {
+    int parts[4];
+    if (sscanf(ipString.c_str(), "%d.%d.%d.%d", &parts[0], &parts[1], &parts[2], &parts[3]) == 4) {
+        for (int i = 0; i < 4; i++) {
+            if (parts[i] < 0 || parts[i] > 255) {
+                return false; // Invalid IP part
+            }
+            ip[i] = static_cast<uint8_t>(parts[i]);
+        }
+        return true;
+    }
+    return false; // Invalid IP format
+}
+
+String PortManager::macToString(const byte mac[6]) {
+    char macStr[18]; // 6 * 2 (hex) + 5 (colons) + 1 (null terminator) = 18
+    sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    return String(macStr);
+}
+
+bool PortManager::stringToMAC(const String &macString, byte mac[6]) {
+    int parts[6];
+    if (sscanf(macString.c_str(), "%02x:%02x:%02x:%02x:%02x:%02x", &parts[0], &parts[1], &parts[2], &parts[3], &parts[4], &parts[5]) == 6) {
+        for (int i = 0; i < 6; i++) {
+            if (parts[i] < 0 || parts[i] > 255) {
+                return false; // Invalid MAC part
+            }
+            mac[i] = static_cast<byte>(parts[i]);
+        }
+        return true;
+    }
+    return false; // Invalid MAC format
+}
+
+

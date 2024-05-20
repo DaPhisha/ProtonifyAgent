@@ -123,7 +123,7 @@ void printFlashStats(){
 }
 
 void printHeapStatsHistory() {
-    LogManager::getInstance().writeLog("Heap Stats History:");
+    LOG("Heap Stats History:");
     int currentIndex = (heapStatsIndex + MAX_HEAPS - 1) % MAX_HEAPS;  // Start with the most recent complete record
 
     for (int i = 0; i < MAX_HEAPS; i++) {
