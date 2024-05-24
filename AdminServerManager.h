@@ -47,6 +47,18 @@ private:
     static void handleLogOut(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleGetAnalogPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleAnalogPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleGetDigitalINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleDigitalOUTPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleGetDigitalOUTPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleDigitalINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleGetHMIPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleHMIPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleGetPTEMPPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handlePTEMPPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleGetProgrammableIOPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleProgrammableIOPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleGetENCODERPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleENCODERPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handlePortUpdate(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static String getUptimeString();
     static String generateRandomToken();

@@ -501,7 +501,7 @@ const char* ResourceHandler::getJavascript() {
     return R"(
     
     document.addEventListener('DOMContentLoaded', function() {
-    const version = '1.0.1';
+    const version = '1.0.5';
     console.log(`Script version: ${version}`);
 
     const navbarToggle = document.getElementById('navbarToggle');
@@ -540,12 +540,12 @@ const char* ResourceHandler::getJavascript() {
     if (form) {
         form.addEventListener('submit', function(event) {
             event.preventDefault();
-            console.log('Admin form submitted');
+            console.log('Admin Settings Update Request');
 
             const formData = new FormData(form);
             const params = new URLSearchParams();
             formData.forEach((value, key) => {
-                console.log(`Form data: ${key} = ${value}`);
+                //console.log(`Form data: ${key} = ${value}`);
                 params.append(key, decodeURIComponent(value.replace(/\+/g, ' ')));
             });
 
@@ -575,132 +575,137 @@ const char* ResourceHandler::getJavascript() {
         });
     }
 
-    // Add form submit handlers for port update forms
-    const portForms = document.querySelectorAll('.port-card form');
-    portForms.forEach(form => {
-        form.addEventListener('submit', function(event) {
-            event.preventDefault();
-            console.log('Port form submitted');
+    // Function to attach event listeners to port update forms
+    function attachPortFormListeners() {
+        const portForms = document.querySelectorAll('.port-card form');
+        portForms.forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                console.log('Port Update Request.');
 
-            const formData = new FormData(form);
-            const params = new URLSearchParams();
-            formData.forEach((value, key) => {
-                console.log(`Port form data: ${key} = ${value}`);
-                params.append(key, decodeURIComponent(value.replace(/\+/g, ' ')));
-            });
+                const formData = new FormData(form);
+                const params = new URLSearchParams();
+                formData.forEach((value, key) => {
+                    //console.log(`Port form data: ${key} = ${value}`);
+                    params.append(key, decodeURIComponent(value.replace(/\+/g, ' ')));
+                });
 
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', form.action, true);
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-            xhr.onload = function() {
-                const errorMessage = document.getElementById('error-message');
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    console.log('Response received:', response);
-                    errorMessage.textContent = response.message;
-                    errorMessage.style.color = xhr.status === 200 ? 'green' : 'red';
-                    if (xhr.status === 200 && response.status === 'SUCCESS') {
-                        console.log('Port update successful');
-                        //updatePortLists(); // Refresh the port lists if the update was successful
-                    } else {
-                        console.log('Port update failed');
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', form.action, true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    const errorMessage = document.getElementById('error-message');
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        console.log('Response received:', response);
+                        errorMessage.textContent = response.message;
+                        errorMessage.style.color = xhr.status === 200 ? 'green' : 'red';
+                        if (xhr.status === 200 && response.status === 'SUCCESS') {
+                            console.log('Port update successful');
+                            updatePortLists(response.message); // Refresh the port lists if the update was successful
+                        } else {
+                            console.log('Port update failed');
+                        }
+                    } catch (e) {
+                        console.error('Error parsing JSON response:', e);
+                        errorMessage.textContent = 'Error parsing response';
+                        errorMessage.style.color = 'red';
                     }
-                } catch (e) {
-                    console.error('Error parsing JSON response:', e);
-                    errorMessage.textContent = 'Error parsing response';
+                };
+                xhr.onerror = function() {
+                    console.error('Request failed');
+                    const errorMessage = document.getElementById('error-message');
+                    errorMessage.textContent = 'Request failed';
                     errorMessage.style.color = 'red';
-                }
-            };
-            xhr.onerror = function() {
-                console.error('Request failed');
-                const errorMessage = document.getElementById('error-message');
-                errorMessage.textContent = 'Request failed';
-                errorMessage.style.color = 'red';
-            };
-            xhr.send(params.toString());
-            console.log('Request sent with data:', params.toString());
+                };
+                xhr.send(params.toString());
+                console.log('Request sent with data:', params.toString());
+            });
         });
-    });
+    }
 
     // Initial fetch of port lists if on the ports page
     if (window.location.pathname.startsWith('/ports/')) {
-        updatePortLists();
+        updatePortLists('Manage your analog ports below.');
+    }
+
+    function updatePortLists(message) {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', '/ports/analog/list', true);
+        xhr.onload = function() {
+            const errorMessage = document.getElementById('error-message');
+            console.log('Updating port lists.');
+            if (xhr.status === 200) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMessage.textContent = message || response.message;
+                    errorMessage.style.color = 'green';
+
+                    const activePortsContainer = document.querySelector('.active-ports');
+                    const inactivePortsContainer = document.querySelector('.inactive-ports');
+                    activePortsContainer.innerHTML = '';
+                    inactivePortsContainer.innerHTML = '';
+
+                    response.data.activePorts.forEach(port => {
+                        activePortsContainer.innerHTML += createPortCard(port, true);
+                    });
+
+                    response.data.inactivePorts.forEach(port => {
+                        inactivePortsContainer.innerHTML += createPortCard(port, false);
+                    });
+
+                    // Attach event listeners to the newly created forms
+                    attachPortFormListeners();
+                } catch (e) {
+                    console.error('Error parsing JSON response:', e);
+                    errorMessage.textContent = 'Error parsing JSON response';
+                    errorMessage.style.color = 'red';
+                }
+            } else {
+                errorMessage.textContent = 'Failed to update port lists';
+                errorMessage.style.color = 'red';
+            }
+        };
+        xhr.onerror = function() {
+            console.error('Request to update port lists failed');
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = 'Request to update port lists failed';
+            errorMessage.style.color = 'red';
+        };
+        xhr.send();
+    }
+
+    function createPortCard(port, isActive) {
+        return `
+            <div class='port-card ${isActive ? 'active-port' : 'inactive-port'}'>
+                <div class='port-card-header'>${port.pinDescription}</div>
+                <div class='port-card-content'>
+                    <form action='/ports/update' method='POST'>
+                        <label for='circuitType'>Circuit Type</label>
+                        <select id='circuitType' name='circuitType'>
+                            <option value='ONOFF' ${port.circuitType === 'ONOFF' ? 'selected' : ''}>ON/OFF</option>
+                            <option value='MA420' ${port.circuitType === 'MA420' ? 'selected' : ''}>4-20mA</option>
+                            <option value='CTEMP' ${port.circuitType === 'CTEMP' ? 'selected' : ''}>Temperature</option>
+                            <option value='VALVE' ${port.circuitType === 'VALVE' ? 'selected' : ''}>Valve</option>
+                            <option value='FILL' ${port.circuitType === 'FILL' ? 'selected' : ''}>Fill</option>
+                            <option value='PULSE' ${port.circuitType === 'PULSE' ? 'selected' : ''}>Pulse</option>
+                        </select>
+                        <label for='pinDescription'>Description</label>
+                        <input type='text' id='pinDescription' name='pinDescription' value='${decodeURIComponent(port.pinDescription)}' required>
+                        <label for='isActive'>Active</label>
+                        <input type='checkbox' id='isActive' name='isActive' ${port.isActive ? 'checked' : ''}>
+                        <label for='isSimulated'>Simulated</label>
+                        <input type='checkbox' id='isSimulated' name='isSimulated' ${port.isSimulated ? 'checked' : ''}>
+                        <input type='hidden' name='portIndex' value='${port.index}'>
+                        <button type='submit'>Update</button>
+                    </form>
+                </div>
+            </div>
+        `;
     }
 });
 
-function updatePortLists() {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', '/ports/analog/list', true);
-    xhr.onload = function() {
-        const errorMessage = document.getElementById('error-message');
-        console.log('Updating port lists with response:', xhr.responseText);
-        if (xhr.status === 200) {
-            try {
-                const response = JSON.parse(xhr.responseText);
-                errorMessage.textContent = response.message;
-                errorMessage.style.color = 'green';
-
-                const activePortsContainer = document.querySelector('.active-ports');
-                const inactivePortsContainer = document.querySelector('.inactive-ports');
-                activePortsContainer.innerHTML = '';
-                inactivePortsContainer.innerHTML = '';
-
-                response.data.activePorts.forEach(port => {
-                    activePortsContainer.innerHTML += createPortCard(port, true);
-                });
-
-                response.data.inactivePorts.forEach(port => {
-                    inactivePortsContainer.innerHTML += createPortCard(port, false);
-                });
-            } catch (e) {
-                console.error('Error parsing JSON response:', e);
-                errorMessage.textContent = 'Error parsing JSON response';
-                errorMessage.style.color = 'red';
-            }
-        } else {
-            errorMessage.textContent = 'Failed to update port lists';
-            errorMessage.style.color = 'red';
-        }
-    };
-    xhr.onerror = function() {
-        console.error('Request to update port lists failed');
-        const errorMessage = document.getElementById('error-message');
-        errorMessage.textContent = 'Request to update port lists failed';
-        errorMessage.style.color = 'red';
-    };
-    xhr.send();
-}
-
-function createPortCard(port, isActive) {
-    return `
-        <div class='port-card ${isActive ? 'active-port' : 'inactive-port'}'>
-            <div class='port-card-header'>${port.pinDescription}</div>
-            <div class='port-card-content'>
-                <form action='/ports/update' method='POST'>
-                    <label for='circuitType'>Circuit Type</label>
-                    <select id='circuitType' name='circuitType'>
-                        <option value='ONOFF' ${port.circuitType === 'ONOFF' ? 'selected' : ''}>ON/OFF</option>
-                        <option value='MA420' ${port.circuitType === 'MA420' ? 'selected' : ''}>4-20mA</option>
-                        <option value='CTEMP' ${port.circuitType === 'CTEMP' ? 'selected' : ''}>Temperature</option>
-                        <option value='VALVE' ${port.circuitType === 'VALVE' ? 'selected' : ''}>Valve</option>
-                        <option value='FILL' ${port.circuitType === 'FILL' ? 'selected' : ''}>Fill</option>
-                        <option value='PULSE' ${port.circuitType === 'PULSE' ? 'selected' : ''}>Pulse</option>
-                    </select>
-                    <label for='pinDescription'>Description</label>
-                    <input type='text' id='pinDescription' name='pinDescription' value='${decodeURIComponent(port.pinDescription)}' required>
-                    <label for='isActive'>Active</label>
-                    <input type='checkbox' id='isActive' name='isActive' ${port.isActive ? 'checked' : ''}>
-                    <label for='isSimulated'>Simulated</label>
-                    <input type='checkbox' id='isSimulated' name='isSimulated' ${port.isSimulated ? 'checked' : ''}>
-                    <input type='hidden' name='portIndex' value='${port.index}'>
-                    <button type='submit'>Update</button>
-                </form>
-            </div>
-        </div>
-    `;
-}
-
-
+    
     )";
 }
 
@@ -730,9 +735,12 @@ return R"(
                 <span class='dropdown-toggle' id='portsDropdown'>Ports</span>
                 <div class='dropdown-menu' id='portsDropdownMenu'>
                     <a href='/ports/analog'>Analog</a>
-                    <a href='/ports/digital'>Digital</a>
+                    <a href='/ports/digitalIN'>Digital IN</a>
+                    <a href='/ports/digitalOUT'>Digital OUT</a>
                     <a href='/ports/programmableIO'>Programmable IO</a>
+                    <a href='/ports/HMI'>HMI</a>
                     <a href='/ports/temperature'>Temperature</a>
+                    <a href='/ports/encoders'>Encoders</a>
                 </div>
             </div>
             <a href='/console'>Console</a>

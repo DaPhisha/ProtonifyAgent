@@ -861,7 +861,7 @@ void AdminServerManager::handleHomeLandingPage(EthernetClient& client, const Str
 void AdminServerManager::handleAnalogPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken){
   if(authToken != m_activeToken){
           LOG("UN-AUTHORIZED ACCESS /ports/analog GET");
-          handleError(client, 404, "Un-Authorized Access Request to /ports/analog");
+          handleError(client, 404, "FAILURE: Un-Authorized Access Request to /ports/analog");
           return;
   }
   //build port landing page
@@ -887,7 +887,7 @@ void AdminServerManager::handleAnalogPorts(EthernetClient& client, const String&
 void AdminServerManager::handleGetAnalogPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
     if(authToken != m_activeToken){
         LOG("UN-AUTHORIZED ACCESS /ports/analog/list GET");
-        sendErrorResponse(client, "Un-Authorized Access Request to /ports/analog");
+        sendErrorResponse(client, "FAILURE: Un-Authorized Access Request to /ports/analog");
         return;
     }
 
@@ -936,12 +936,13 @@ void AdminServerManager::handleGetAnalogPorts(EthernetClient& client, const Stri
     DEBUG(response);
 
     // Send the JSON response using the helper function
-    sendSuccessResponseData(client, "Analog ports retrieved successfully.", response);
+    sendSuccessResponseData(client, "SUCCESS: Analog ports retrieved.", response);
 }
 
 
 //handles a port update POST processing
 void AdminServerManager::handlePortUpdate(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    LOG("PORT UPDATE REQUEST: " + request);
     // Check for authentication
     if(authToken != m_activeToken){
         LOG("UN-AUTHORIZED ACCESS /ports/update POST");
@@ -1005,8 +1006,8 @@ void AdminServerManager::handlePortUpdate(EthernetClient& client, const String& 
 
     // Save the updated settings to flash or other persistent storage
     PortManager::getInstance().writeToFlash();
-
-    sendSuccessResponse(client, "Port updated successfully");
+    LOG("Port settings validated and written to flash.");
+    sendSuccessResponse(client, "SUCCESS: Port " + pinDescription + " updated!");
 }
 
 
