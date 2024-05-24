@@ -27,7 +27,7 @@ constexpr int MAX_STATE_TXT = 32;
 //*******************************************************************
 //*******************************************************************
 //*******************************************************************
-const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH05182024";
+const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH05252024";
 
 enum CIRCUIT_TYPE {
     NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, CIRCUIT_TYPE_COUNT
@@ -105,6 +105,7 @@ public:
     bool stringToIP(const String &ipString, uint8_t ip[4]);
     bool stringToMAC(const String &macString, byte mac[6]);
     String macToString(const byte mac[6]);
+    String timeToString(time_t t);
 };
 
 #endif // PORT_MANAGER_H

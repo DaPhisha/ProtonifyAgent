@@ -38,10 +38,10 @@ void setup() {
     logManager.init(MASTER_DEBUG);  // Initialize LogManager (e.g., setting up Serial communication)
     try{
        //Task Scheduler add tasks timeout and callback - REMOVE FOR RELEASE
-      scheduler.addTask(300000, checkMemory);
-      scheduler.addTask(300000, checkNetwork);
+      scheduler.addTask(86400000, checkMemory);//for now every 24 hours
+      scheduler.addTask(3600000, checkNetwork);//every hour
       //periodically write the current settings to flash - REMOVE FOR RELEASE 
-      //scheduler.addTask(600000,writeSettingsToFlash);
+      scheduler.addTask(86400000,writeSettingsToFlash);//every 24 hrs write the settings to flash
       //print settings - REMOVE FOR RELEASE
       //scheduler.addTask(600001, printSettings);
 

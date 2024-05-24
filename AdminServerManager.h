@@ -38,11 +38,16 @@ private:
     static void handleRoot(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleHome(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleAdmin(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleConsole(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleReset(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void processAdmin(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleCSS(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleJS(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleLogin(EthernetClient& client, const String& request,int contentLength, const String &authToken); 
-    static void handleLogOut(EthernetClient& client, const String& request,int contentLength, const String &authToken); 
+    static void handleLogOut(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleGetAnalogPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleAnalogPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handlePortUpdate(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static String getUptimeString();
     static String generateRandomToken();
     static String urlDecode(const String &str);
@@ -51,6 +56,12 @@ private:
     static String extractValueFromPostData(String postData, String variableName);
     static void handleError(EthernetClient& client, int errorCode, String errorMessage);
     static void handleHomeLandingPage(EthernetClient& client, const String& request, String user_message);
+    static bool isValidMAC(const String& mac);
+    static bool isValidIP(const String& ip);
+    static bool isValidURL(const String& url);
+    static void sendSuccessResponse(EthernetClient& client, const String& message);
+    static void sendSuccessResponseData(EthernetClient& client, const String& message, const String& data);
+    static void sendErrorResponse(EthernetClient& client, const String& message);
     /*
     void serveMainPage(EthernetClient& client, const String &message);
     void serveLoginPage(EthernetClient& client, const String &message);

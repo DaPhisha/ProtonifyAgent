@@ -46,9 +46,20 @@ body {
 
 .navbar-menu a {
     color: white;
-    padding: 10px 20px;
+    padding: 0px 10px;
     text-decoration: none;
 }
+.navbar-menu .dropdown-toggle {
+    padding: 10px 20px;
+    cursor: pointer;
+    color: white;
+    text-decoration: none;
+}
+
+.navbar-menu .dropdown-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Optional hover effect */
+}
+
 
 .navbar-toggle {
     display: none;
@@ -56,6 +67,35 @@ body {
     border: none;
     color: white;
     font-size: 24px;
+}
+/* Dropdown Styles */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+    min-width: 160px;
+}
+
+.dropdown-menu a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-menu a:hover {
+    background-color: #f1f1f1;
+}
+
+.dropdown:hover .dropdown-menu {
+    display: block;
 }
 
 /* Main Content */
@@ -328,7 +368,7 @@ body {
 .admin-card-header {
     width: 100%;
     background-color: #b3b3b3;
-    padding: 10px;
+    padding: 0px;
     border-bottom: 1px solid #ddd;
     text-align: center;
     font-weight: bold;
@@ -369,23 +409,298 @@ body {
     cursor: pointer;
     font-size: 16px;
     margin-top: 20px;
+    margin-bottom: 20px;
 }
 
 .admin-submit-button:hover {
     background-color: #45a049;
 }
 
+/* Ports Container */
+.ports-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+}
+
+/* Active and Inactive Ports */
+.active-ports, .inactive-ports {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+/* Port Card */
+.port-card {
+    width: 250px;
+    height: auto;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    overflow: hidden;
+}
+
+.port-card:hover {
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    transform: translateY(-5px);
+}
+
+/* Port Card Header */
+.port-card-header {
+    width: 100%;
+    background-color: #b3b3b3;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* Port Card Content */
+.port-card-content {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Port Card Fields */
+.port-card-content label {
+    font-weight: bold;
+}
+
+.port-card-content input[type='text'],
+.port-card-content select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.port-card-content input[type='checkbox'] {
+    margin-left: 10px;
+}
+
+.active-port {
+    background-color: #e0f7fa;
+}
+
+.inactive-port {
+    background-color: #f0f0f0;
+}
+
+
     )";
 }
 const char* ResourceHandler::getJavascript() {
     return R"(
-      document.addEventListener('DOMContentLoaded', function() {
-        const navbarToggle = document.getElementById('navbarToggle');
-        const navbarMenu = document.getElementById('navbarMenu');
+    
+    document.addEventListener('DOMContentLoaded', function() {
+    const version = '1.0.1';
+    console.log(`Script version: ${version}`);
+
+    const navbarToggle = document.getElementById('navbarToggle');
+    const navbarMenu = document.getElementById('navbarMenu');
+    if (navbarToggle && navbarMenu) {
         navbarToggle.addEventListener('click', function() {
-          navbarMenu.classList.toggle('active');
+            navbarMenu.classList.toggle('active');
         });
-      });
+    }
+
+    const portsDropdown = document.getElementById('portsDropdown');
+    const portsDropdownMenu = document.getElementById('portsDropdownMenu');
+    if (portsDropdown && portsDropdownMenu) {
+        portsDropdown.addEventListener('click', function() {
+            portsDropdownMenu.classList.toggle('active');
+        });
+    }
+
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordField = document.getElementById('Admin_PASSWORD');
+    if (togglePassword && passwordField) {
+        togglePassword.addEventListener('change', function() {
+            passwordField.type = this.checked ? 'text' : 'password';
+        });
+    }
+
+    const toggleWifiPassword = document.getElementById('toggleWifiPassword');
+    const wifiPasswordField = document.getElementById('WIFI_PASSWORD');
+    if (toggleWifiPassword && wifiPasswordField) {
+        toggleWifiPassword.addEventListener('change', function() {
+            wifiPasswordField.type = this.checked ? 'text' : 'password';
+        });
+    }
+
+    const form = document.querySelector('.admin-form');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            console.log('Admin form submitted');
+
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+            formData.forEach((value, key) => {
+                console.log(`Form data: ${key} = ${value}`);
+                params.append(key, decodeURIComponent(value.replace(/\+/g, ' ')));
+            });
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', form.action, true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                const errorMessage = document.getElementById('error-message');
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    console.log('Response received:', response);
+                    errorMessage.textContent = response.message;
+                    errorMessage.style.color = xhr.status === 200 ? 'green' : 'red';
+                } catch (e) {
+                    console.error('Error parsing JSON response:', e);
+                    errorMessage.textContent = 'Error parsing response';
+                    errorMessage.style.color = 'red';
+                }
+            };
+            xhr.onerror = function() {
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = 'Request failed';
+                errorMessage.style.color = 'red';
+                console.error('Request failed');
+            };
+            xhr.send(params.toString());
+        });
+    }
+
+    // Add form submit handlers for port update forms
+    const portForms = document.querySelectorAll('.port-card form');
+    portForms.forEach(form => {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            console.log('Port form submitted');
+
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+            formData.forEach((value, key) => {
+                console.log(`Port form data: ${key} = ${value}`);
+                params.append(key, decodeURIComponent(value.replace(/\+/g, ' ')));
+            });
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', form.action, true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                const errorMessage = document.getElementById('error-message');
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    console.log('Response received:', response);
+                    errorMessage.textContent = response.message;
+                    errorMessage.style.color = xhr.status === 200 ? 'green' : 'red';
+                    if (xhr.status === 200 && response.status === 'SUCCESS') {
+                        console.log('Port update successful');
+                        //updatePortLists(); // Refresh the port lists if the update was successful
+                    } else {
+                        console.log('Port update failed');
+                    }
+                } catch (e) {
+                    console.error('Error parsing JSON response:', e);
+                    errorMessage.textContent = 'Error parsing response';
+                    errorMessage.style.color = 'red';
+                }
+            };
+            xhr.onerror = function() {
+                console.error('Request failed');
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = 'Request failed';
+                errorMessage.style.color = 'red';
+            };
+            xhr.send(params.toString());
+            console.log('Request sent with data:', params.toString());
+        });
+    });
+
+    // Initial fetch of port lists if on the ports page
+    if (window.location.pathname.startsWith('/ports/')) {
+        updatePortLists();
+    }
+});
+
+function updatePortLists() {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/ports/analog/list', true);
+    xhr.onload = function() {
+        const errorMessage = document.getElementById('error-message');
+        console.log('Updating port lists with response:', xhr.responseText);
+        if (xhr.status === 200) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                errorMessage.textContent = response.message;
+                errorMessage.style.color = 'green';
+
+                const activePortsContainer = document.querySelector('.active-ports');
+                const inactivePortsContainer = document.querySelector('.inactive-ports');
+                activePortsContainer.innerHTML = '';
+                inactivePortsContainer.innerHTML = '';
+
+                response.data.activePorts.forEach(port => {
+                    activePortsContainer.innerHTML += createPortCard(port, true);
+                });
+
+                response.data.inactivePorts.forEach(port => {
+                    inactivePortsContainer.innerHTML += createPortCard(port, false);
+                });
+            } catch (e) {
+                console.error('Error parsing JSON response:', e);
+                errorMessage.textContent = 'Error parsing JSON response';
+                errorMessage.style.color = 'red';
+            }
+        } else {
+            errorMessage.textContent = 'Failed to update port lists';
+            errorMessage.style.color = 'red';
+        }
+    };
+    xhr.onerror = function() {
+        console.error('Request to update port lists failed');
+        const errorMessage = document.getElementById('error-message');
+        errorMessage.textContent = 'Request to update port lists failed';
+        errorMessage.style.color = 'red';
+    };
+    xhr.send();
+}
+
+function createPortCard(port, isActive) {
+    return `
+        <div class='port-card ${isActive ? 'active-port' : 'inactive-port'}'>
+            <div class='port-card-header'>${port.pinDescription}</div>
+            <div class='port-card-content'>
+                <form action='/ports/update' method='POST'>
+                    <label for='circuitType'>Circuit Type</label>
+                    <select id='circuitType' name='circuitType'>
+                        <option value='ONOFF' ${port.circuitType === 'ONOFF' ? 'selected' : ''}>ON/OFF</option>
+                        <option value='MA420' ${port.circuitType === 'MA420' ? 'selected' : ''}>4-20mA</option>
+                        <option value='CTEMP' ${port.circuitType === 'CTEMP' ? 'selected' : ''}>Temperature</option>
+                        <option value='VALVE' ${port.circuitType === 'VALVE' ? 'selected' : ''}>Valve</option>
+                        <option value='FILL' ${port.circuitType === 'FILL' ? 'selected' : ''}>Fill</option>
+                        <option value='PULSE' ${port.circuitType === 'PULSE' ? 'selected' : ''}>Pulse</option>
+                    </select>
+                    <label for='pinDescription'>Description</label>
+                    <input type='text' id='pinDescription' name='pinDescription' value='${decodeURIComponent(port.pinDescription)}' required>
+                    <label for='isActive'>Active</label>
+                    <input type='checkbox' id='isActive' name='isActive' ${port.isActive ? 'checked' : ''}>
+                    <label for='isSimulated'>Simulated</label>
+                    <input type='checkbox' id='isSimulated' name='isSimulated' ${port.isSimulated ? 'checked' : ''}>
+                    <input type='hidden' name='portIndex' value='${port.index}'>
+                    <button type='submit'>Update</button>
+                </form>
+            </div>
+        </div>
+    `;
+}
+
+
     )";
 }
 
@@ -411,14 +726,66 @@ return R"(
         <div class='navbar-menu' id='navbarMenu'>
             <a href='/home'>Home</a>
             <a href='/admin'>Admin</a>
-            <a href='/settings'>Settings</a>
-             <a href='/console'>Console</a>
+            <div class='dropdown'>
+                <span class='dropdown-toggle' id='portsDropdown'>Ports</span>
+                <div class='dropdown-menu' id='portsDropdownMenu'>
+                    <a href='/ports/analog'>Analog</a>
+                    <a href='/ports/digital'>Digital</a>
+                    <a href='/ports/programmableIO'>Programmable IO</a>
+                    <a href='/ports/temperature'>Temperature</a>
+                </div>
+            </div>
+            <a href='/console'>Console</a>
             <a href='/logout'>Logout</a>
         </div>
         <button class='navbar-toggle' id='navbarToggle'>☰</button>
     </nav>
 </header>
+
+
   )";
+}
+const char* ResourceHandler::getResetCard(){
+return R"(
+<form action='/console/reset' method='POST' class='reset-form'>
+            <div class='admin-card'>
+                <div class='admin-card-header'>Reset Options</div>
+                <div class='admin-card-content'>
+                    <label for='resetType'>Select Reset Option:</label>
+                    <select id='resetType' name='resetType' required>
+                        <option value='soft'>Soft Reset</option>
+                        <option value='factory'>Factory Reset</option>
+                    </select>
+                </div>
+                <button type='submit' class='admin-submit-button'>Reset</button>
+            </div>
+        </form>
+         )";
+}
+
+const char* ResourceHandler::getMessageDiv(String message){
+    String html = "<br><p class='centered-message' id='error-message'>" + message + "</p><br>";
+    char* htmlCStr = new char[html.length() + 1];
+    strcpy(htmlCStr, html.c_str());
+    return htmlCStr; 
+}
+
+const char* ResourceHandler::getPortMainContent(){
+return R"(
+<main class='main-content'>
+    <br><p class='centered-message' id='error-message'>Manage your analog ports below.</p><br>
+    <div class='ports-container'>
+        <h2>Active Ports</h2>
+        <div class='active-ports'>
+            <!-- Active port cards will be inserted here -->
+        </div>
+        <h2>Inactive Ports</h2>
+        <div class='inactive-ports'>
+            <!-- Inactive port cards will be inserted here -->
+        </div>
+    </div>
+</main>
+   )";
 }
 
 const char* ResourceHandler::getLoginCard(){

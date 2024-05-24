@@ -19,7 +19,10 @@ public:
     static const char* getFooter();
     static const char* getLoginCard();
     static const char* getHeaderMenu();
+    static const char* getResetCard();
     static const char* getStatCard(String title, String statValue);
+    static const char* getPortMainContent();
+    static const char* getMessageDiv(String msg);
 };
 
 #endif // RESOURCE_HANDLER_H

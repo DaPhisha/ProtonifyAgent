@@ -19,6 +19,7 @@ Version: 1.0.0
 #include "LogManager.h"
 #include <sstream>
 #include <iomanip> // for std::setw
+#include <cstring>
 
 PortManager::PortManager(){
   isInitialized = false;
@@ -113,8 +114,18 @@ void PortManager::initializeDefaults() {
          // Initialize date fields
          settings.DATE_LAST_UPDATED = time(NULL);  
          settings.DATE_LAST_REBOOT = time(NULL);
+         
+         //reset the log counters and log array
+         settings.currentLogIndex = 0;
+         for(int i = 0; i < MAX_LOG_ENTRIES; i++){
+              settings.logEntries[i][0]= '\0';
+         }
+         
+         
          LOG("LOADED SYSTEM DEFAULTS COMPLETE...writing settings to flash");
         
+
+
          //completed initializtion
          isInitialized = true;
          loadPortDefaults();
@@ -143,13 +154,13 @@ void PortManager::loadPortDefaults(){
         */ 
         //Array value is the port number
         //start of analog pins
-        setPortValues(0,true,false,0,-1,ANALOG_INPUT,ONOFF,"Pin AI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(1,false,false,1,-1,ANALOG_INPUT,ONOFF,"Pin AI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(2,false,false,2,-1,ANALOG_INPUT,ONOFF,"Pin AI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(3,true,false,-1,0,ANALOG_OUTPUT,ONOFF,"AO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(4,false,false,-1,1,ANALOG_OUTPUT,ONOFF,"AO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(5,false,false,-1,2,ANALOG_OUTPUT,ONOFF,"AO_02", 0.00,0.00,currentTime,"INIT DEFAULT");
-        setPortValues(6,false,false,-1,3,ANALOG_OUTPUT,ONOFF,"AO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(0,true,false,0,-1,ANALOG_INPUT,ONOFF,"PIN AI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(1,false,false,1,-1,ANALOG_INPUT,ONOFF,"PIN AI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(2,false,false,2,-1,ANALOG_INPUT,ONOFF,"PIN AI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(3,true,false,-1,0,ANALOG_OUTPUT,ONOFF,"PIN AO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(4,false,false,-1,1,ANALOG_OUTPUT,ONOFF,"PIN AO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(5,false,false,-1,2,ANALOG_OUTPUT,ONOFF,"PIN AO_02", 0.00,0.00,currentTime,"INIT DEFAULT");
+        setPortValues(6,false,false,-1,3,ANALOG_OUTPUT,ONOFF,"PIN AO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         //start of digital input pins 0-7
         setPortValues(7,true,false,DIN_READ_CH_PIN_00,-1,DIGITAL_INPUT,ONOFF,"DI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -542,4 +553,9 @@ bool PortManager::stringToMAC(const String &macString, byte mac[6]) {
     return false; // Invalid MAC format
 }
 
-
+String PortManager::timeToString(time_t t) {
+    char buffer[20];
+    struct tm* tm_info = localtime(&t);
+    strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", tm_info);
+    return String(buffer); // Wrapping the result in double quotes
+}

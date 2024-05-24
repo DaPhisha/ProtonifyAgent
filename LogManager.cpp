@@ -6,6 +6,8 @@ Description: Defines LogManager class for handling logs.
 Version: 1.0.0
 */
 #include "LogManager.h"
+#include "PortManager.h"
+
 
 LogManager& LogManager::getInstance() {
     static LogManager instance; // Guaranteed to be destroyed and instantiated on first use
@@ -35,6 +37,19 @@ void LogManager::writeLog(String message) {
     if (Serial) {
         Serial.println(fullMessage);
     }
+
+  if (fullMessage.length() >= MAX_LOG_STRING_CHAR) {
+        fullMessage = fullMessage.substring(0, MAX_LOG_STRING_CHAR);
+    }
+
+  //copy the log message into the flash array  
+  strcpy(PortManager::getInstance().settings.logEntries[PortManager::getInstance().settings.currentLogIndex], fullMessage.c_str());
+
+  PortManager::getInstance().settings.logEntries[PortManager::getInstance().settings.currentLogIndex][MAX_LOG_STRING_CHAR -1] = '\0';  //Make sure it null terminated
+
+  //increment the index
+  PortManager::getInstance().settings.currentLogIndex = (PortManager::getInstance().settings.currentLogIndex + 1) % MAX_LOG_ENTRIES;
+
 }
 void LogManager::writeDebugLog(String message) {
     if(m_debug == false){
