@@ -45,21 +45,36 @@ private:
     static void handleJS(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleLogin(EthernetClient& client, const String& request,int contentLength, const String &authToken); 
     static void handleLogOut(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleGetAnalogPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleAnalogPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleGetDigitalINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleDigitalOUTPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleGetDigitalOUTPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleDigitalINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleGetHMIPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleHMIPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleGetPTEMPPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handlePTEMPPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleGetProgrammableIOPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleProgrammableIOPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleGetENCODERPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
-    static void handleENCODERPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    
+   
+    //PORT HANDLERS
+    static void handleGetAnalogINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleAnalogINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleGetAnalogOUTPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleAnalogOUTPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleDigitalINPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    static void handleGetDigitalINPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    static void handleDigitalOUTPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    static void handleGetDigitalOUTPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    static void handleProgrammableIOPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    static void handleGetProgrammableIOPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    static void handleHMIPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    static void handleGetHMIPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    static void handlePTEMPPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    static void handleGetPTEMPPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    
+    static void handleENCODERPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    
+    static void handleGetENCODERPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+
+   //Generic Port Handler
+    //loads the page for admin ports by type
+    static void handlePortsPage(EthernetClient& client, const String& request, int contentLength, const String &authToken, const String& pageTitle);
+    static void handleGetPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken, PIN_TYPE pinType);
+    //Port update from AJAX client
     static void handlePortUpdate(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+  
+
     static String getUptimeString();
     static String generateRandomToken();
     static String urlDecode(const String &str);

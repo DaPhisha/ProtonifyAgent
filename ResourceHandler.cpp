@@ -79,7 +79,7 @@ body {
     position: absolute;
     background-color: #f9f9f9;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    z-index: 1;
+    z-index: 9999;
     min-width: 160px;
 }
 
@@ -499,9 +499,9 @@ body {
 }
 const char* ResourceHandler::getJavascript() {
     return R"(
-    
-    document.addEventListener('DOMContentLoaded', function() {
-    const version = '1.0.5';
+
+      document.addEventListener('DOMContentLoaded', function() {
+    const version = '1.0.7'; // Updated version
     console.log(`Script version: ${version}`);
 
     const navbarToggle = document.getElementById('navbarToggle');
@@ -545,7 +545,6 @@ const char* ResourceHandler::getJavascript() {
             const formData = new FormData(form);
             const params = new URLSearchParams();
             formData.forEach((value, key) => {
-                //console.log(`Form data: ${key} = ${value}`);
                 params.append(key, decodeURIComponent(value.replace(/\+/g, ' ')));
             });
 
@@ -586,7 +585,6 @@ const char* ResourceHandler::getJavascript() {
                 const formData = new FormData(form);
                 const params = new URLSearchParams();
                 formData.forEach((value, key) => {
-                    //console.log(`Port form data: ${key} = ${value}`);
                     params.append(key, decodeURIComponent(value.replace(/\+/g, ' ')));
                 });
 
@@ -624,14 +622,17 @@ const char* ResourceHandler::getJavascript() {
         });
     }
 
+    // Determine the port type from the URL path and update accordingly
+    const portType = window.location.pathname.split('/')[2]; // Extract the port type from the URL
+
     // Initial fetch of port lists if on the ports page
-    if (window.location.pathname.startsWith('/ports/')) {
-        updatePortLists('Manage your analog ports below.');
+    if (portType) {
+        updatePortLists(`Manage your ${portType} ports below.`);
     }
 
     function updatePortLists(message) {
         const xhr = new XMLHttpRequest();
-        xhr.open('GET', '/ports/analog/list', true);
+        xhr.open('GET', `/ports/${portType}/list`, true); // Use the extracted port type in the URL
         xhr.onload = function() {
             const errorMessage = document.getElementById('error-message');
             console.log('Updating port lists.');
@@ -705,6 +706,8 @@ const char* ResourceHandler::getJavascript() {
     }
 });
 
+
+
     
     )";
 }
@@ -734,12 +737,13 @@ return R"(
             <div class='dropdown'>
                 <span class='dropdown-toggle' id='portsDropdown'>Ports</span>
                 <div class='dropdown-menu' id='portsDropdownMenu'>
-                    <a href='/ports/analog'>Analog</a>
-                    <a href='/ports/digitalIN'>Digital IN</a>
-                    <a href='/ports/digitalOUT'>Digital OUT</a>
-                    <a href='/ports/programmableIO'>Programmable IO</a>
-                    <a href='/ports/HMI'>HMI</a>
-                    <a href='/ports/temperature'>Temperature</a>
+                    <a href='/ports/analogin'>Analog IN</a>
+                    <a href='/ports/analogout'>Analog OUT</a>
+                    <a href='/ports/digitalin'>Digital IN</a>
+                    <a href='/ports/digitalout'>Digital OUT</a>
+                    <a href='/ports/programableio'>Programmable IO</a>
+                    <a href='/ports/hmi'>HMI</a>
+                    <a href='/ports/ptemp'>Temperature</a>
                     <a href='/ports/encoders'>Encoders</a>
                 </div>
             </div>
@@ -779,21 +783,20 @@ const char* ResourceHandler::getMessageDiv(String message){
 }
 
 const char* ResourceHandler::getPortMainContent(){
-return R"(
-<main class='main-content'>
-    <br><p class='centered-message' id='error-message'>Manage your analog ports below.</p><br>
-    <div class='ports-container'>
-        <h2>Active Ports</h2>
-        <div class='active-ports'>
-            <!-- Active port cards will be inserted here -->
-        </div>
-        <h2>Inactive Ports</h2>
-        <div class='inactive-ports'>
-            <!-- Inactive port cards will be inserted here -->
-        </div>
-    </div>
-</main>
-   )";
+    String content = "<main class='main-content'>";
+    content += "<br><p class='centered-message' id='error-message'>Manage your ports below.</p><br>";
+    content += "<div class='ports-container'>";
+    content += "<h2>Active Ports</h2>";
+    content += "<div class='active-ports'>";
+    content += "<!-- Active port cards will be inserted here -->";
+    content += "</div>";
+    content += "<h2>Inactive Ports</h2>";
+    content += "<div class='inactive-ports'>";
+    content += "<!-- Inactive port cards will be inserted here -->";
+    content += "</div>";
+    content += "</div>";
+    content += "</main>";
+    return content.c_str();
 }
 
 const char* ResourceHandler::getLoginCard(){

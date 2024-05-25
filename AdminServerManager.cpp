@@ -60,16 +60,51 @@ static void handleRoot(EthernetClient& client, const String& request,int content
   static RouteHandler localHandlers[] = {
         {"GET", "/", handleRoot},
         {"GET", "/login", handleRoot},
+
         {"GET", "/logout", handleLogOut},
         {"POST", "/login", handleLogin},
+        
         {"GET", "/home", handleHome},
         {"POST", "/home", handleHome},
+        
         {"GET", "/console", handleConsole},
         {"POST", "/console/reset", handleReset},
+        
         {"GET", "/admin", handleAdmin},
         {"POST", "/admin", processAdmin},
-        {"GET", "/ports/analog", handleAnalogPorts}, 
-        {"GET", "/ports/analog/list", handleGetAnalogPorts}, 
+        
+        //Analog Admin Page
+        {"GET", "/ports/analogin", handleAnalogINPorts}, 
+        //analog dashboard
+        {"GET", "/ports/analogin/list", handleGetAnalogINPorts},
+
+         //Analog Admin Page
+        {"GET", "/ports/analogout", handleAnalogOUTPorts}, 
+        //analog dashboard
+        {"GET", "/ports/analogout/list", handleGetAnalogOUTPorts},
+
+        {"GET", "/ports/digitalin", handleDigitalINPorts}, 
+        {"GET", "/ports/digitalin/list", handleGetDigitalINPorts},
+
+        {"GET", "/ports/digitalout", handleDigitalOUTPorts}, 
+        {"GET", "/ports/digitalout/list", handleGetDigitalOUTPorts},
+
+        {"GET", "/ports/programableio", handleProgrammableIOPorts}, 
+        {"GET", "/ports/programmableio/list", handleGetProgrammableIOPorts},
+
+        //Load Admin Page
+        {"GET", "/ports/hmi", handleHMIPorts}, 
+        //Load Ports
+        {"GET", "/ports/hmi/list", handleGetHMIPorts},
+
+        {"GET", "/ports/ptemp", handlePTEMPPorts}, 
+        {"GET", "/ports/ptemp/list", handleGetPTEMPPorts},
+
+      
+        {"GET", "/ports/encoders", handleENCODERPorts}, 
+        {"GET", "/ports/encoders/list", handleGetENCODERPorts},
+  
+         
         {"POST", "/ports/update", handlePortUpdate},   
         {"GET", "/js/script.js", handleJS},
         {"GET", "/css/style.css", handleCSS}
@@ -856,7 +891,7 @@ void AdminServerManager::handleHomeLandingPage(EthernetClient& client, const Str
     client.println("</html>");
     client.stop();
 }
-
+/*
 //generates landing page for analog ports
 void AdminServerManager::handleAnalogPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken){
   if(authToken != m_activeToken){
@@ -882,7 +917,8 @@ void AdminServerManager::handleAnalogPorts(EthernetClient& client, const String&
   client.println("</html>");
   client.stop();
 }
-
+*/
+/*
 //returns a json list of ports for client side processing
 void AdminServerManager::handleGetAnalogPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
     if(authToken != m_activeToken){
@@ -938,7 +974,7 @@ void AdminServerManager::handleGetAnalogPorts(EthernetClient& client, const Stri
     // Send the JSON response using the helper function
     sendSuccessResponseData(client, "SUCCESS: Analog ports retrieved.", response);
 }
-
+*/
 
 //handles a port update POST processing
 void AdminServerManager::handlePortUpdate(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
@@ -1036,3 +1072,167 @@ void AdminServerManager::sendErrorResponse(EthernetClient& client, const String&
     client.println("{\"status\":\"FAILURE\",\"message\":\"" + message + "\"}");
     client.stop();
 }
+
+// Generic function to handle GET requests for port listings
+void AdminServerManager::handleGetPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken, PIN_TYPE pinType) {
+    if(authToken != m_activeToken){
+        LOG("UN-AUTHORIZED ACCESS");
+        sendErrorResponse(client, "FAILURE: Un-Authorized Access Request");
+        return;
+    }
+
+    LOG("Sending PORT LISTING...");
+
+    // Start building the JSON response
+    String response = "{\"activePorts\":[";
+    bool firstActive = true;
+    bool firstInactive = true;
+    String inactivePorts = "],\"inactivePorts\":[";
+
+    for (int i = 0; i < MAX_PORTS; ++i) {
+        if (PortManager::getInstance().settings.ports[i].pinType == pinType) {
+            String portJson = "{";
+            portJson += "\"index\":" + String(i) + ",";
+            portJson += "\"readPinNumber\":" + String(PortManager::getInstance().settings.ports[i].readPinNumber) + ",";
+            portJson += "\"writePinNumber\":" + String(PortManager::getInstance().settings.ports[i].writePinNumber) + ",";
+            portJson += "\"pinType\":\"" + PortManager::getInstance().pinTypeToString(PortManager::getInstance().settings.ports[i].pinType) + "\",";
+            portJson += "\"circuitType\":\"" + PortManager::getInstance().circuitTypeToString(PortManager::getInstance().settings.ports[i].circuitType) + "\",";
+            portJson += "\"pinDescription\":\"" + String(PortManager::getInstance().settings.ports[i].pinDescription) + "\",";
+            portJson += "\"isActive\":" + String(PortManager::getInstance().settings.ports[i].isActive ? "true" : "false") + ",";
+            portJson += "\"isSimulated\":" + String(PortManager::getInstance().settings.ports[i].isSimulated ? "true" : "false") + ",";
+            portJson += "\"currentReading\":" + String(PortManager::getInstance().settings.ports[i].currentReading) + ",";
+            portJson += "\"lastReading\":" + String(PortManager::getInstance().settings.ports[i].lastReading) + ",";
+            portJson += "\"state\":\"" + String(PortManager::getInstance().settings.ports[i].state) + "\",";
+            portJson += "\"lastUpdated\":\"" + PortManager::getInstance().timeToString(PortManager::getInstance().settings.ports[i].lastUpdated) + "\"";
+            portJson += "}";
+
+            if (PortManager::getInstance().settings.ports[i].isActive) {
+                if (!firstActive) {
+                    response += ",";
+                }
+                response += portJson;
+                firstActive = false;
+            } else {
+                if (!firstInactive) {
+                    inactivePorts += ",";
+                }
+                inactivePorts += portJson;
+                firstInactive = false;
+            }
+        }
+    }
+    response += inactivePorts + "]}";
+
+    DEBUG(response);
+
+    // Send the JSON response using the helper function
+    sendSuccessResponseData(client, "SUCCESS: Ports retrieved.", response);
+}
+
+// Generic function to generate the HTML landing page for port types
+void AdminServerManager::handlePortsPage(EthernetClient& client, const String& request, int contentLength, const String &authToken, const String& pageTitle) {
+    if(authToken != m_activeToken){
+        LOG("UN-AUTHORIZED ACCESS");
+        handleError(client, 404, "FAILURE: Un-Authorized Access Request");
+        return;
+    }
+
+    // Build port landing page
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: text/html");
+    client.println("Connection: close");
+    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400"); // This sets the token as a cookie valid for 24 hours
+    client.println();
+    client.println("<!DOCTYPE HTML>");
+    client.println("<html lang='en'>");
+    client.print(ResourceHandler::getHeader(pageTitle));
+    client.println("<body>");
+    client.print(ResourceHandler::getHeaderMenu());
+    client.print(ResourceHandler::getPortMainContent());
+    client.print(ResourceHandler::getFooter());
+    client.println("</body>");
+    client.println("</html>");
+    client.stop();
+}
+/*
+// Handle Analog Ports
+void AdminServerManager::handleAnalogPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handlePortsPage(client, request, contentLength, authToken, "Analog Port Manager");
+}
+
+void AdminServerManager::handleGetAnalogPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handleGetPorts(client, request, contentLength, authToken, ANALOG_INPUT);
+}
+*/
+
+// Handle Digital IN Ports
+void AdminServerManager::handleDigitalINPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handlePortsPage(client, request, contentLength, authToken, "Digital IN Port Manager");
+}
+
+void AdminServerManager::handleGetDigitalINPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handleGetPorts(client, request, contentLength, authToken, DIGITAL_INPUT);
+}
+
+// Handle Digital OUT Ports
+void AdminServerManager::handleDigitalOUTPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handlePortsPage(client, request, contentLength, authToken, "Digital OUT Port Manager");
+}
+
+void AdminServerManager::handleGetDigitalOUTPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handleGetPorts(client, request, contentLength, authToken, DIGITAL_OUTPUT);
+}
+
+// Handle Programmable IO Ports
+void AdminServerManager::handleProgrammableIOPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handlePortsPage(client, request, contentLength, authToken, "Programmable IO Port Manager");
+}
+
+void AdminServerManager::handleGetProgrammableIOPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handleGetPorts(client, request, contentLength, authToken, PROGRAMMABLE_IO);
+}
+
+// Handle HMI Ports
+void AdminServerManager::handleHMIPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handlePortsPage(client, request, contentLength, authToken, "HMI Port Manager");
+}
+
+void AdminServerManager::handleGetHMIPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handleGetPorts(client, request, contentLength, authToken, HMI);
+}
+
+// Handle Temperature Ports
+void AdminServerManager::handlePTEMPPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handlePortsPage(client, request, contentLength, authToken, "Temperature Port Manager");
+}
+
+void AdminServerManager::handleGetPTEMPPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handleGetPorts(client, request, contentLength, authToken, PTEMP);
+}
+
+// Handle Encoder Ports
+void AdminServerManager::handleENCODERPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handlePortsPage(client, request, contentLength, authToken, "Encoder Port Manager");
+}
+
+void AdminServerManager::handleGetENCODERPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    handleGetPorts(client, request, contentLength, authToken, ENCODER);
+}
+
+void AdminServerManager::handleAnalogINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+    handlePortsPage(client, request, contentLength, authToken, "Analog IN Port Manager");
+}
+
+void AdminServerManager::handleGetAnalogINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+    // Similar to handleGetAnalogPorts but for Analog IN
+    handleGetPorts(client, request, contentLength, authToken, ANALOG_INPUT);
+}
+
+void AdminServerManager::handleAnalogOUTPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+    handlePortsPage(client, request, contentLength, authToken, "Analog OUT Port Manager");
+}
+
+void AdminServerManager::handleGetAnalogOUTPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+    handleGetPorts(client, request, contentLength, authToken, ANALOG_OUTPUT);
+}
+
