@@ -155,47 +155,47 @@ void PortManager::loadPortDefaults(){
         //Array value is the port number
         //start of analog pins
         setPortValues(0,true,false,0,-1,ANALOG_INPUT,ONOFF,"PIN AI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(1,false,false,1,-1,ANALOG_INPUT,ONOFF,"PIN AI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(2,false,false,2,-1,ANALOG_INPUT,ONOFF,"PIN AI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(3,true,false,-1,0,ANALOG_OUTPUT,ONOFF,"PIN AO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(4,false,false,-1,1,ANALOG_OUTPUT,ONOFF,"PIN AO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(5,false,false,-1,2,ANALOG_OUTPUT,ONOFF,"PIN AO_02", 0.00,0.00,currentTime,"INIT DEFAULT");
-        setPortValues(6,false,false,-1,3,ANALOG_OUTPUT,ONOFF,"PIN AO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(1,false,false,1,-1,ANALOG_INPUT,MA420,"PIN AI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(2,false,false,2,-1,ANALOG_INPUT,CTEMP,"PIN AI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(3,true,false,-1,0,ANALOG_OUTPUT,CTEMP,"PIN AO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(4,false,false,-1,1,ANALOG_OUTPUT,VALVE,"PIN AO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(5,true,false,-1,2,ANALOG_OUTPUT,FILL,"PIN AO_02", 0.00,0.00,currentTime,"INIT DEFAULT");
+        setPortValues(6,false,false,-1,3,ANALOG_OUTPUT,PULSE,"PIN AO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         //start of digital input pins 0-7
         setPortValues(7,true,false,DIN_READ_CH_PIN_00,-1,DIGITAL_INPUT,ONOFF,"DI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(8,false,false,DIN_READ_CH_PIN_01,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(8,false,false,DIN_READ_CH_PIN_01,-1,DIGITAL_INPUT,MA420,"DI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(9,false,false,DIN_READ_CH_PIN_02,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(10,false,false,DIN_READ_CH_PIN_03,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_03", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(11,false,false,DIN_READ_CH_PIN_04,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_04", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(12,false,false,DIN_READ_CH_PIN_05,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_05", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(10,false,false,DIN_READ_CH_PIN_03,-1,DIGITAL_INPUT,CTEMP,"DI_03", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(11,false,false,DIN_READ_CH_PIN_04,-1,DIGITAL_INPUT,VALVE,"DI_04", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(12,false,false,DIN_READ_CH_PIN_05,-1,DIGITAL_INPUT,FILL,"DI_05", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(13,false,false,DIN_READ_CH_PIN_06,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_06", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(14,false,false,DIN_READ_CH_PIN_07,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_07", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(14,false,false,DIN_READ_CH_PIN_07,-1,DIGITAL_INPUT,PULSE,"DI_07", 0.00,0.00, currentTime,"INIT DEFAULT");
         //end of digital input pins
          //start of digital output pins 15-22
          setPortValues(15,true,false,-1,0,DIGITAL_OUTPUT,ONOFF,"DO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(16,false,false,-1,1,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(17,false,false,-1,2,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_02", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(18,false,false,-1,3,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(19,false,false,-1,4,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_04", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(20,false,false,-1,5,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_05", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(21,false,false,-1,6,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_06", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(22,false,false,-1,7,DIGITAL_OUTPUT,NOT_ASSIGNED,"DO_07", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(16,false,false,-1,1,DIGITAL_OUTPUT,ONOFF,"DO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(17,false,false,-1,2,DIGITAL_OUTPUT,ONOFF,"DO_02", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(18,false,false,-1,3,DIGITAL_OUTPUT,ONOFF,"DO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(19,false,false,-1,4,DIGITAL_OUTPUT,ONOFF,"DO_04", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(20,false,false,-1,5,DIGITAL_OUTPUT,ONOFF,"DO_05", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(21,false,false,-1,6,DIGITAL_OUTPUT,ONOFF,"DO_06", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(22,false,false,-1,7,DIGITAL_OUTPUT,ONOFF,"DO_07", 0.00,0.00, currentTime,"INIT DEFAULT");
          //end of the digital output pins
 
          //start of 12 digital PROGRAMMABLE_IO pins
          setPortValues(23,true,false,IO_WRITE_CH_PIN_00,IO_READ_CH_PIN_00,PROGRAMMABLE_IO,ONOFF,"PIO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(24,false,false,IO_WRITE_CH_PIN_01,IO_READ_CH_PIN_01,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(25,false,false,IO_WRITE_CH_PIN_02,IO_READ_CH_PIN_02,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_02", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(26,false,false,IO_WRITE_CH_PIN_03,IO_READ_CH_PIN_03,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(27,false,false,IO_WRITE_CH_PIN_04,IO_READ_CH_PIN_04,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_04", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(28,false,false,IO_WRITE_CH_PIN_05,IO_READ_CH_PIN_05,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_05", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(29,false,false,IO_WRITE_CH_PIN_06,IO_READ_CH_PIN_06,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_06", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(30,false,false,IO_WRITE_CH_PIN_07,IO_READ_CH_PIN_07,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_07", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(31,false,false,IO_WRITE_CH_PIN_08,IO_READ_CH_PIN_08,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_08", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(32,false,false,IO_WRITE_CH_PIN_09,IO_READ_CH_PIN_09,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_09", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(33,false,false,IO_WRITE_CH_PIN_10,IO_READ_CH_PIN_10,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_10", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(34,false,false,IO_WRITE_CH_PIN_11,IO_READ_CH_PIN_11,PROGRAMMABLE_IO,NOT_ASSIGNED,"PIO_11", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(24,false,false,IO_WRITE_CH_PIN_01,IO_READ_CH_PIN_01,PROGRAMMABLE_IO,ONOFF,"PIO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(25,false,false,IO_WRITE_CH_PIN_02,IO_READ_CH_PIN_02,PROGRAMMABLE_IO,ONOFF,"PIO_02", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(26,false,false,IO_WRITE_CH_PIN_03,IO_READ_CH_PIN_03,PROGRAMMABLE_IO,ONOFF,"PIO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(27,false,false,IO_WRITE_CH_PIN_04,IO_READ_CH_PIN_04,PROGRAMMABLE_IO,ONOFF,"PIO_04", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(28,false,false,IO_WRITE_CH_PIN_05,IO_READ_CH_PIN_05,PROGRAMMABLE_IO,ONOFF,"PIO_05", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(29,false,false,IO_WRITE_CH_PIN_06,IO_READ_CH_PIN_06,PROGRAMMABLE_IO,ONOFF,"PIO_06", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(30,false,false,IO_WRITE_CH_PIN_07,IO_READ_CH_PIN_07,PROGRAMMABLE_IO,ONOFF,"PIO_07", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(31,false,false,IO_WRITE_CH_PIN_08,IO_READ_CH_PIN_08,PROGRAMMABLE_IO,ONOFF,"PIO_08", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(32,false,false,IO_WRITE_CH_PIN_09,IO_READ_CH_PIN_09,PROGRAMMABLE_IO,ONOFF,"PIO_09", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(33,false,false,IO_WRITE_CH_PIN_10,IO_READ_CH_PIN_10,PROGRAMMABLE_IO,ONOFF,"PIO_10", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(34,false,false,IO_WRITE_CH_PIN_11,IO_READ_CH_PIN_11,PROGRAMMABLE_IO,ONOFF,"PIO_11", 0.00,0.00, currentTime,"INIT DEFAULT");
          //END programmable IO
          //start of digital HMI pins
          /*
@@ -209,8 +209,8 @@ TXN (Transmit Negative)
     TXN refers to the "Transmit Negative" line. It complements the TXP by carrying an inverted version of the same signal sent on the TXP line.
     The differential receiver at the other end of the line measures the voltage difference between TXP and TXN. This configuration helps to cancel out any noise that might be picked up along the transmission path, as the noise would typically affect both TXP and TXN equally and thus be subtracted out in the differential measurement.
          */
-         setPortValues(35,true,false,1,1,HMI,NOT_ASSIGNED,"TXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(36,true,false,-1,-1,HMI,NOT_ASSIGNED,"TXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(35,true,false,1,1,HMI,PULSE,"HMI TXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(36,true,false,-1,-1,HMI,PULSE,"HMI TXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
          
          
 
@@ -223,42 +223,42 @@ TXN (Transmit Negative)
 
         RXN is the negative line of the differential pair and receives the inverse of the signal transmitted by the TXN line of the sending device.
         */
-        setPortValues(37,true,false,1,1,HMI,NOT_ASSIGNED,"RXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(38,true,false,-1,-1,HMI,NOT_ASSIGNED,"RXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(37,true,false,1,1,HMI,PULSE,"HMI RXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(38,true,false,-1,-1,HMI,PULSE,"HMI RXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         /*
         Wiring: CAN bus typically involves a twisted pair cable for CANH and CANL to improve resistance against EMI.
         Termination: To reduce reflections and ensure signal integrity, the CAN bus should be terminated at both ends of the main cable with 120-ohm resistors.
         */
 
-        setPortValues(39,true,false,1,1,HMI,NOT_ASSIGNED,"CANH", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(40,true,false,-1,-1,HMI,NOT_ASSIGNED,"CANL", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(39,true,false,1,1,HMI,PULSE,"Bus CANH", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(40,true,false,-1,-1,HMI,PULSE,"Bus CANL", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         //End of digital HMI pins 
 
         //start of temp probe pins
-        setPortValues(41,true,false,0,0,PTEMP,CTEMP,"TP-00", 0.00,0.00,currentTime,"INIT DEFAULT");
+        setPortValues(41,true,false,0,0,PTEMP,CTEMP,"TMP TP-00", 0.00,0.00,currentTime,"INIT DEFAULT");
 
         
-        setPortValues(42,false,false,1,1,PTEMP,NOT_ASSIGNED,"TN-00", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(43,false,false,2,2,PTEMP,NOT_ASSIGNED,"RTD-00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(42,true,false,1,1,PTEMP,CTEMP,"TMP TN-00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(43,true,false,2,2,PTEMP,CTEMP,"TMP RTD-00", 0.00,0.00, currentTime,"INIT DEFAULT");
 
-        setPortValues(44,false,false,3,3,PTEMP,NOT_ASSIGNED,"TP-01", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(45,false,false,4,4,PTEMP,NOT_ASSIGNED,"TN-01", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(46,false,false,5,5,PTEMP,NOT_ASSIGNED,"RTD-01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(44,false,false,3,3,PTEMP,CTEMP,"TMP TP-01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(45,false,false,4,4,PTEMP,CTEMP,"TMP TN-01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(46,false,false,5,5,PTEMP,CTEMP,"TMP RTD-01", 0.00,0.00, currentTime,"INIT DEFAULT");
         
-        setPortValues(47,false,false,6,6,PTEMP,NOT_ASSIGNED,"TP-02", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(48,false,false,7,7,PTEMP,NOT_ASSIGNED,"TN-02", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(49,false,false,8,8,PTEMP,NOT_ASSIGNED,"RTD-02", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(47,false,false,6,6,PTEMP,CTEMP,"TMP TP-02", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(48,false,false,7,7,PTEMP,CTEMP,"TMP TN-02", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(49,false,false,8,8,PTEMP,CTEMP,"TMP RTD-02", 0.00,0.00, currentTime,"INIT DEFAULT");
         //end temp probes
         
         //start of encoders pins
-        setPortValues(50,true,false,0,0,ENCODER,NOT_ASSIGNED,"A0", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(51,true,false,1,1,ENCODER,NOT_ASSIGNED,"B0", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(52,true,false,2,2,ENCODER,NOT_ASSIGNED,"Z0", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(53,true,false,3,3,ENCODER,NOT_ASSIGNED,"A1", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(54,true,false,4,4,ENCODER,NOT_ASSIGNED,"B1", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(55,true,false,5,5,ENCODER,NOT_ASSIGNED,"Z1", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(50,true,false,0,0,ENCODER,PULSE,"ENCODER A0", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(51,false,false,1,1,ENCODER,PULSE,"ENCODER B0", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(52,false,false,2,2,ENCODER,PULSE,"ENCODER Z0", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(53,false,false,3,3,ENCODER,PULSE,"ENCODER A1", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(54,false,false,4,4,ENCODER,PULSE,"ENCODER B1", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(55,false,false,5,5,ENCODER,PULSE,"ENCODER Z1", 0.00,0.00, currentTime,"INIT DEFAULT");
      //end of encoders pins
 }
 void PortManager::setPortValues(int indexPort, bool isActive, bool isSimulated, int readPinNum,int writePinNum, PIN_TYPE pinType, CIRCUIT_TYPE circuitType, String pinDescription, float curReading, float lastReading, time_t currentTime, String stateStr){
@@ -510,6 +510,19 @@ String PortManager::circuitTypeToString(CIRCUIT_TYPE type){
         case VALVE: return "Valve Reading";
         case FILL: return "Tank Fill Level";
         case PULSE: return "Pulse";
+        default: return "UNKNOWN";
+    }
+
+}
+String PortManager::circuitTypeToCode(CIRCUIT_TYPE type){
+  switch (type) {
+        case NOT_ASSIGNED: return "not_assigned";
+        case ONOFF: return "ONOFF";
+        case MA420: return "MA420";
+        case CTEMP: return "CTEMP";
+        case VALVE: return "VALVE";
+        case FILL: return "FILL";
+        case PULSE: return "PULSE";
         default: return "UNKNOWN";
     }
 

@@ -73,6 +73,10 @@ static void handleRoot(EthernetClient& client, const String& request,int content
         {"GET", "/admin", handleAdmin},
         {"POST", "/admin", processAdmin},
         
+        //all active ports
+        {"GET", "/ports/active", handleAllActivePorts},
+        {"GET", "/ports/active/list", handleGetAllActivePorts},
+
         //Analog Admin Page
         {"GET", "/ports/analogin", handleAnalogINPorts}, 
         //analog dashboard
@@ -90,7 +94,7 @@ static void handleRoot(EthernetClient& client, const String& request,int content
         {"GET", "/ports/digitalout/list", handleGetDigitalOUTPorts},
 
         {"GET", "/ports/programableio", handleProgrammableIOPorts}, 
-        {"GET", "/ports/programmableio/list", handleGetProgrammableIOPorts},
+        {"GET", "/ports/programableio/list", handleGetProgrammableIOPorts},
 
         //Load Admin Page
         {"GET", "/ports/hmi", handleHMIPorts}, 
@@ -1096,7 +1100,7 @@ void AdminServerManager::handleGetPorts(EthernetClient& client, const String& re
             portJson += "\"readPinNumber\":" + String(PortManager::getInstance().settings.ports[i].readPinNumber) + ",";
             portJson += "\"writePinNumber\":" + String(PortManager::getInstance().settings.ports[i].writePinNumber) + ",";
             portJson += "\"pinType\":\"" + PortManager::getInstance().pinTypeToString(PortManager::getInstance().settings.ports[i].pinType) + "\",";
-            portJson += "\"circuitType\":\"" + PortManager::getInstance().circuitTypeToString(PortManager::getInstance().settings.ports[i].circuitType) + "\",";
+            portJson += "\"circuitType\":\"" + PortManager::getInstance().circuitTypeToCode(PortManager::getInstance().settings.ports[i].circuitType) + "\",";
             portJson += "\"pinDescription\":\"" + String(PortManager::getInstance().settings.ports[i].pinDescription) + "\",";
             portJson += "\"isActive\":" + String(PortManager::getInstance().settings.ports[i].isActive ? "true" : "false") + ",";
             portJson += "\"isSimulated\":" + String(PortManager::getInstance().settings.ports[i].isSimulated ? "true" : "false") + ",";
@@ -1235,4 +1239,75 @@ void AdminServerManager::handleAnalogOUTPorts(EthernetClient& client, const Stri
 void AdminServerManager::handleGetAnalogOUTPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
     handleGetPorts(client, request, contentLength, authToken, ANALOG_OUTPUT);
 }
+
+void AdminServerManager::handleAllActivePorts(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+    if(authToken != m_activeToken){
+        LOG("UN-AUTHORIZED ACCESS /ports/active GET");
+        handleError(client, 404, "FAILURE: Un-Authorized Access Request to /ports/active");
+        return;
+    }
+
+    // Build the All Active Ports page
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: text/html");
+    client.println("Connection: close");
+    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400"); // Set the token as a cookie valid for 24 hours
+    client.println();
+    client.println("<!DOCTYPE HTML>");
+    client.println("<html lang='en'>");
+    client.print(ResourceHandler::getHeader("All Active Port Manager"));
+    client.println("<body>");
+    client.print(ResourceHandler::getHeaderMenu());
+    client.print(ResourceHandler::getActivePortMainContent());
+    client.print(ResourceHandler::getFooter());
+    client.println("</body>");
+    client.println("</html>");
+    client.stop();
+}
+
+void AdminServerManager::handleGetAllActivePorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    if(authToken != m_activeToken){
+        LOG("UN-AUTHORIZED ACCESS");
+        sendErrorResponse(client, "FAILURE: Un-Authorized Access Request");
+        return;
+    }
+
+    LOG("Sending ALL ACTIVE PORTS LISTING...");
+
+    // Start building the JSON response
+    String response = "{\"activePorts\":[";
+    bool firstActive = true;
+
+    for (int i = 0; i < MAX_PORTS; ++i) {
+        if (PortManager::getInstance().settings.ports[i].isActive) {
+            String portJson = "{";
+            portJson += "\"index\":" + String(i) + ",";
+            portJson += "\"readPinNumber\":" + String(PortManager::getInstance().settings.ports[i].readPinNumber) + ",";
+            portJson += "\"writePinNumber\":" + String(PortManager::getInstance().settings.ports[i].writePinNumber) + ",";
+            portJson += "\"pinType\":\"" + PortManager::getInstance().pinTypeToString(PortManager::getInstance().settings.ports[i].pinType) + "\",";
+            portJson += "\"circuitType\":\"" + PortManager::getInstance().circuitTypeToCode(PortManager::getInstance().settings.ports[i].circuitType) + "\",";
+            portJson += "\"pinDescription\":\"" + String(PortManager::getInstance().settings.ports[i].pinDescription) + "\",";
+            portJson += "\"isSimulated\":" + String(PortManager::getInstance().settings.ports[i].isSimulated ? "true" : "false") + ",";
+            portJson += "\"isActive\":" + String(PortManager::getInstance().settings.ports[i].isActive ? "true" : "false") + ",";
+            portJson += "\"currentReading\":" + String(PortManager::getInstance().settings.ports[i].currentReading) + ",";
+            portJson += "\"lastReading\":" + String(PortManager::getInstance().settings.ports[i].lastReading) + ",";
+            portJson += "\"state\":\"" + String(PortManager::getInstance().settings.ports[i].state) + "\",";
+            portJson += "\"lastUpdated\":\"" + PortManager::getInstance().timeToString(PortManager::getInstance().settings.ports[i].lastUpdated) + "\"";
+            portJson += "}";
+
+            if (!firstActive) {
+                response += ",";
+            }
+            response += portJson;
+            firstActive = false;
+        }
+    }
+    response += "]}";
+
+    DEBUG(response);
+
+    // Send the JSON response using the helper function
+    sendSuccessResponseData(client, "SUCCESS: All active ports retrieved.", response);
+}
+
 

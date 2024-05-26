@@ -27,7 +27,7 @@ constexpr int MAX_STATE_TXT = 32;
 //*******************************************************************
 //*******************************************************************
 //*******************************************************************
-const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH05252024";
+const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH05292024";
 
 enum CIRCUIT_TYPE {
     NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, CIRCUIT_TYPE_COUNT
@@ -100,6 +100,7 @@ public:
     String AllPortsToString();
     String pinTypeToString(PIN_TYPE type);
     String circuitTypeToString(CIRCUIT_TYPE type);
+    String circuitTypeToCode(CIRCUIT_TYPE type);
     int getActivePortCount();
     String ipToString(const uint8_t ip[4]);
     bool stringToIP(const String &ipString, uint8_t ip[4]);

@@ -64,9 +64,10 @@ private:
     static void handleGetPTEMPPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
     
     static void handleENCODERPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
-    
     static void handleGetENCODERPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
 
+    static void handleGetAllActivePorts(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    static void handleAllActivePorts(EthernetClient& client, const String& request,int contentLength, const String &authToken); 
    //Generic Port Handler
     //loads the page for admin ports by type
     static void handlePortsPage(EthernetClient& client, const String& request, int contentLength, const String &authToken, const String& pageTitle);

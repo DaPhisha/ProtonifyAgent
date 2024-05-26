@@ -381,11 +381,9 @@ body {
     flex-direction: column;
     gap: 10px;
 }
-
 .admin-card-content label {
     font-weight: bold;
 }
-
 .admin-card-content input[type='text'],
 .admin-card-content input[type='password'],
 .admin-card-content input[type='number'] {
@@ -394,11 +392,9 @@ body {
     border: 1px solid #ddd;
     border-radius: 5px;
 }
-
 .admin-card-content input[type='checkbox'] {
     margin-left: 10px;
 }
-
 /* Submit Button */
 .admin-submit-button {
     padding: 10px 20px;
@@ -411,11 +407,9 @@ body {
     margin-top: 20px;
     margin-bottom: 20px;
 }
-
 .admin-submit-button:hover {
     background-color: #45a049;
 }
-
 /* Ports Container */
 .ports-container {
     display: flex;
@@ -423,7 +417,6 @@ body {
     gap: 20px;
     padding: 20px;
 }
-
 /* Active and Inactive Ports */
 .active-ports, .inactive-ports {
     display: flex;
@@ -431,26 +424,25 @@ body {
     gap: 20px;
     justify-content: center;
 }
-
 /* Port Card */
 .port-card {
     width: 250px;
     height: auto;
     background-color: #fff;
-    border: 1px solid #ddd;
+    border: 1px solid #ccc;
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     transition: box-shadow 0.3s ease, transform 0.3s ease;
     overflow: hidden;
+    margin: 10px;
+    padding: 10px;
 }
-
 .port-card:hover {
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
     transform: translateY(-5px);
 }
-
 /* Port Card Header */
 .port-card-header {
     width: 100%;
@@ -460,7 +452,6 @@ body {
     text-align: center;
     font-weight: bold;
 }
-
 /* Port Card Content */
 .port-card-content {
     padding: 10px;
@@ -492,17 +483,93 @@ body {
 
 .inactive-port {
     background-color: #f0f0f0;
+    margin-bottom: 20px !important;
 }
 
+/* Specific styles for different circuit types */
+
+
+/* Styles for the live data section */
+.live-data {
+    margin-top: 10px;
+    padding: 10px;
+    border-top: 1px solid #ccc;
+}
+
+.live-data p {
+    margin: 5px 0;
+    font-size: 12px;
+    font-weight: bold;
+}
+/* General styling for live data */
+.live-data {
+    margin-top: 10px;
+    //padding: 10px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+/* ON/OFF circuit type styling */
+.live-data.onoff {
+    background-color: wheat !important;
+    color: #00796b !important;
+}
+
+/* ON/OFF circuit type styling */
+.live-data.not_assigned {
+    background-color: red !important;
+    color: #fff !important;
+}
+
+.live-data.unknown {
+    background-color: orange !important;
+    color: #000 !important;
+}
+
+/* 4-20mA circuit type styling */
+.live-data.ma420 {
+    background-color: #fff !important;
+    color: #e65100 !important;
+}
+
+/* Temperature circuit type styling */
+.live-data.ctemp {
+    background-color: #fff !important;
+    color: green !important;
+}
+
+/* Valve circuit type styling */
+.live-data.valve {
+    background-color: #fff !important;
+    color: #blue !important;
+}
+
+/* Fill circuit type styling */
+.live-data.fill {
+    background-color: #fff !important;
+    color: #8e24aa !important;
+}
+
+/* Pulse circuit type styling */
+.live-data.pulse {
+    background-color: #fff !important;
+    color: #d84315 !important;
+}
 
     )";
 }
 const char* ResourceHandler::getJavascript() {
     return R"(
+    
+    document.addEventListener('DOMContentLoaded', function() {
+    
+    console.log(`javascript version: 1.2.0`);
 
-      document.addEventListener('DOMContentLoaded', function() {
-    const version = '1.0.7'; // Updated version
-    console.log(`Script version: ${version}`);
+    const versionElement = document.querySelector('.version');
+    const version = versionElement ? versionElement.textContent.trim() : 'unknown';
+    
+    // Log the version to the console
+    console.log(`css version: ${version}`);
 
     const navbarToggle = document.getElementById('navbarToggle');
     const navbarMenu = document.getElementById('navbarMenu');
@@ -585,6 +652,7 @@ const char* ResourceHandler::getJavascript() {
                 const formData = new FormData(form);
                 const params = new URLSearchParams();
                 formData.forEach((value, key) => {
+                    console.log(`Key: ${key}, Value: ${decodeURIComponent(value.replace(/\+/g, ' '))}`);
                     params.append(key, decodeURIComponent(value.replace(/\+/g, ' ')));
                 });
 
@@ -645,15 +713,19 @@ const char* ResourceHandler::getJavascript() {
                     const activePortsContainer = document.querySelector('.active-ports');
                     const inactivePortsContainer = document.querySelector('.inactive-ports');
                     activePortsContainer.innerHTML = '';
-                    inactivePortsContainer.innerHTML = '';
+                    if (inactivePortsContainer) {
+                        inactivePortsContainer.innerHTML = '';
+                    }
 
                     response.data.activePorts.forEach(port => {
                         activePortsContainer.innerHTML += createPortCard(port, true);
                     });
 
-                    response.data.inactivePorts.forEach(port => {
-                        inactivePortsContainer.innerHTML += createPortCard(port, false);
-                    });
+                    if (portType !== 'active' && inactivePortsContainer) {
+                        response.data.inactivePorts.forEach(port => {
+                            inactivePortsContainer.innerHTML += createPortCard(port, false);
+                        });
+                    }
 
                     // Attach event listeners to the newly created forms
                     attachPortFormListeners();
@@ -677,6 +749,9 @@ const char* ResourceHandler::getJavascript() {
     }
 
     function createPortCard(port, isActive) {
+        console.log(`Creating port card for port: ${port.pinDescription}`);
+        console.log(`Circuit type of port: ${port.circuitType}`);
+
         return `
             <div class='port-card ${isActive ? 'active-port' : 'inactive-port'}'>
                 <div class='port-card-header'>${port.pinDescription}</div>
@@ -684,12 +759,13 @@ const char* ResourceHandler::getJavascript() {
                     <form action='/ports/update' method='POST'>
                         <label for='circuitType'>Circuit Type</label>
                         <select id='circuitType' name='circuitType'>
-                            <option value='ONOFF' ${port.circuitType === 'ONOFF' ? 'selected' : ''}>ON/OFF</option>
-                            <option value='MA420' ${port.circuitType === 'MA420' ? 'selected' : ''}>4-20mA</option>
-                            <option value='CTEMP' ${port.circuitType === 'CTEMP' ? 'selected' : ''}>Temperature</option>
-                            <option value='VALVE' ${port.circuitType === 'VALVE' ? 'selected' : ''}>Valve</option>
-                            <option value='FILL' ${port.circuitType === 'FILL' ? 'selected' : ''}>Fill</option>
-                            <option value='PULSE' ${port.circuitType === 'PULSE' ? 'selected' : ''}>Pulse</option>
+                            <option value='ONOFF' ${port.circuitType === 'ONOFF' ? 'selected' : ''}>ONOFF</option>
+                            <option value='MA420' ${port.circuitType === 'MA420' ? 'selected' : ''}>MA420</option>
+                            <option value='CTEMP' ${port.circuitType === 'CTEMP' ? 'selected' : ''}>CTEMP</option>
+                            <option value='VALVE' ${port.circuitType === 'VALVE' ? 'selected' : ''}>VALVE</option>
+                            <option value='FILL' ${port.circuitType === 'FILL' ? 'selected' : ''}>FILL</option>
+                            <option value='PULSE' ${port.circuitType === 'PULSE' ? 'selected' : ''}>PULSE</option>
+                            <option value='NOT_ASSIGNED' ${port.circuitType === 'NOT_ASSIGNED' ? 'selected' : ''}>NOT_ASSIGNED</option>
                         </select>
                         <label for='pinDescription'>Description</label>
                         <input type='text' id='pinDescription' name='pinDescription' value='${decodeURIComponent(port.pinDescription)}' required>
@@ -698,14 +774,22 @@ const char* ResourceHandler::getJavascript() {
                         <label for='isSimulated'>Simulated</label>
                         <input type='checkbox' id='isSimulated' name='isSimulated' ${port.isSimulated ? 'checked' : ''}>
                         <input type='hidden' name='portIndex' value='${port.index}'>
+                        ${isActive ? `
+                        <div class='live-data ${port.circuitType.toLowerCase()}'>
+                            <p>Current Reading: ${port.currentReading}</p>
+                            <p>Last Reading: ${port.lastReading}</p>
+                            <p>State: ${port.state}</p>
+                            <p>Last Updated: ${port.lastUpdated}</p>
+                        </div>
+                        ` : ''}
                         <button type='submit'>Update</button>
                     </form>
                 </div>
             </div>
         `;
     }
-});
 
+});
 
 
     
@@ -737,6 +821,7 @@ return R"(
             <div class='dropdown'>
                 <span class='dropdown-toggle' id='portsDropdown'>Ports</span>
                 <div class='dropdown-menu' id='portsDropdownMenu'>
+                    <a href='/ports/active'>All Active</a>
                     <a href='/ports/analogin'>Analog IN</a>
                     <a href='/ports/analogout'>Analog OUT</a>
                     <a href='/ports/digitalin'>Digital IN</a>
@@ -757,6 +842,20 @@ return R"(
 
   )";
 }
+
+const char* ResourceHandler::getActivePortMainContent() {
+    String content = "<main class='main-content'>";
+    content += "<br><p class='centered-message' id='error-message'>Manage all active ports below.</p><br>";
+    content += "<div class='ports-container'>";
+    content += "<h2>Active Ports</h2>";
+    content += "<div class='active-ports'>";
+    content += "<!-- Active port cards will be inserted here -->";
+    content += "</div>";
+    content += "</div>";
+    content += "</main>";
+    return content.c_str();
+}
+
 const char* ResourceHandler::getResetCard(){
 return R"(
 <form action='/console/reset' method='POST' class='reset-form'>
@@ -827,7 +926,10 @@ const char* ResourceHandler::getFooter() {
         <footer class='footer'>
         <p>Protonify &copy; 2024 Powered by DaPhisha</p>
         <script src="/js/script.js"></script>
+        <div class='version' hidden>1.0.7</div>
         </footer>
+        
+
     )";
 }
 

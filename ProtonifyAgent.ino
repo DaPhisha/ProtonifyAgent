@@ -1,4 +1,21 @@
+/*
+File: Protonify Agent 2.0.0 Main .ino File for IDE 2.3.2
+Date Created: April 29, 2024
+Authors: DaPhisha
+Description: Agent for reporting port status as JSON to Mongo Server
+Version: 2.0.0
 
+Road Map -
+Add Cards for import and export a confifuration.
+
+Fix Wifi
+
+Improve UX for Ports
+
+Stick Ports into Meters or Vessels or Processes...
+
+
+*/
 
 
 #include <Arduino_PortentaMachineControl.h>

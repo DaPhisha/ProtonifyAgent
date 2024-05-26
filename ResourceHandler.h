@@ -23,6 +23,7 @@ public:
     static const char* getStatCard(String title, String statValue);
     static const char* getPortMainContent();
     static const char* getMessageDiv(String msg);
+    static const char* getActivePortMainContent(); 
 };
 
 #endif // RESOURCE_HANDLER_H
