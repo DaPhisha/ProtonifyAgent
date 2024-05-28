@@ -27,7 +27,7 @@ constexpr int MAX_STATE_TXT = 32;
 //*******************************************************************
 //*******************************************************************
 //*******************************************************************
-const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH05292024";
+const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH05272024";
 
 enum CIRCUIT_TYPE {
     NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, CIRCUIT_TYPE_COUNT

@@ -14,6 +14,7 @@ Improve UX for Ports
 
 Stick Ports into Meters or Vessels or Processes...
 
+Define port logic rules on what ports can be assigned which circuit types.  CRITICAL FOR SAFETY
 
 */
 
@@ -31,100 +32,267 @@ Stick Ports into Meters or Vessels or Processes...
 #include "NetworkManager.h"
 #include "AdminServerManager.h"
 
-#define MAX_EVENTS 10  // Pin Reference
+#define MAX_EVENTS 10  // Maximum number of scheduled events
 #define MASTER_DEBUG true
 
-const char* PROJECT_VERSION = "2.0.0"; //version
+const char* PROJECT_VERSION = "2.0.0"; // Project version
 
-//init a event scheduler
+// Initialize an event scheduler
 EventScheduler scheduler(MAX_EVENTS); 
 
-//init Network Interface (wifi) 
-//init the etherner NOTE for WIFI would need different library
+// Initialize network interfaces
 EthernetUDP ntpUDP;
 AdminServerManager m_webServer;
 
-
-//init the time client
+// Initialize the time client
 NTPClient timeClient(ntpUDP, "pool.ntp.org");
-time_t systemStartTime;//global to measure elapse refresh rates
-
+time_t systemStartTime;  // Global variable to measure elapsed refresh rates
 
 void setup() {
     LogManager& logManager = LogManager::getInstance(); // Obtain the global LogManager instance
     logManager.init(MASTER_DEBUG);  // Initialize LogManager (e.g., setting up Serial communication)
-    try{
-       //Task Scheduler add tasks timeout and callback - REMOVE FOR RELEASE
-      scheduler.addTask(86400000, checkMemory);//for now every 24 hours
-      scheduler.addTask(3600000, checkNetwork);//every hour
-      //periodically write the current settings to flash - REMOVE FOR RELEASE 
-      scheduler.addTask(86400000,writeSettingsToFlash);//every 24 hrs write the settings to flash
-      //print settings - REMOVE FOR RELEASE
-      //scheduler.addTask(600001, printSettings);
+    try {
+        // Task Scheduler: Add tasks with timeout and callback
+        scheduler.addTask(86400000, checkMemory);  // Check memory every 24 hours
+        scheduler.addTask(3600000, checkNetwork);  // Check network every hour
+        scheduler.addTask(86400000, writeSettingsToFlash);  // Write settings to flash every 24 hours
 
-      //port manager init
-      PortManager& portManager = PortManager::getInstance(); // Automatically loads or initializes ports
-      portManager.init();
+        // Initialize PortManager
+        PortManager& portManager = PortManager::getInstance(); 
+        portManager.init();
 
-      //Print out the port manager settings 
-      DEBUG(portManager.toString());
-    
-      //Print out port settings
-      //LOG(portManager.AllPortsToString()); 
+        // Print out the port manager settings 
+        DEBUG(portManager.toString());
 
-      //network manager
-      NetworkManager& networkManager = NetworkManager::getInstance();
-      if (!networkManager.initializeNetwork()) {
-        LOG("Failed to initialize network.");
-      }
-      //time manager
-      //Start the admin Web server
-      m_webServer.init();
+        // Initialize NetworkManager
+        NetworkManager& networkManager = NetworkManager::getInstance();
+        if (!networkManager.initializeNetwork()) {
+            LOG("Failed to initialize network.");
+        }
 
-      //Set Pin MOdes and Led Modes
-      // pinMode(LED_BUILTIN, OUTPUT);
-      // digitalWrite(LED_BUILTIN, LED_OFF);
-      
-      //FORCE BOOT OF OTHER CORE - CAUTION
-      //bootM4();
-      
-    }catch (const std::exception& e) { // Catch exceptions derived from std::exception
-    LogManager::getInstance().writeLog("*********MAJOR STARTUP FAULT************");
-    LogManager::getInstance().writeLog("Caught std::exception: " + String(e.what()));
-  } catch(...){
-    LogManager::getInstance().writeLog("*********MAJOR STARTUP FAULT************");
-    LogManager::getInstance().writeLog("*********UNKNOWN************");
-  }
-  logManager.writeLog("System Initialized Successfully"); 
+        // Initialize the admin web server
+        m_webServer.init();
+
+    } catch (const std::exception& e) { 
+        LogManager::getInstance().writeLog("*********MAJOR STARTUP FAULT************");
+        LogManager::getInstance().writeLog("Caught std::exception: " + String(e.what()));
+    } catch(...) {
+        LogManager::getInstance().writeLog("*********MAJOR STARTUP FAULT************");
+        LogManager::getInstance().writeLog("*********UNKNOWN************");
+    }
+    logManager.writeLog("System Initialized Successfully"); 
 }
 
 void loop() {
-    // Main loop operations
-    /**************************/
-    
-  try{
-      // Main Loop (M7)
-      //TASK SCHEDULER
-      scheduler.run(); // Run scheduled tasks
-      //process any client requests.
-      m_webServer.handleClient();
-      //processM7Tasks();
-      // Sensor Loop (M4)
-      //processM4Tasks();
-  
-  //GLOBAL CATCH ALL
-  } catch (const std::exception& e) { // Catch exceptions derived from std::exception
-    LogManager::getInstance().writeLog("*********MAJOR SYSTEM FAULT************");
-    LogManager::getInstance().writeLog("Caught std::exception: " + String(e.what()));
-  } catch(...){
-    //dataHandler.addLogEntry("MAIN LOOP CRASH ERROR -- RESETTING DEVICE");
-    //dataHandler.writeTo();
-    //NVIC_SystemReset();
-    LogManager::getInstance().writeLog("*********MAJOR SYSTEM FAULT************");
-    LogManager::getInstance().writeLog("*********UNKNOWN************");
-  }
+    try {
+        // Main Loop (M7)
+        scheduler.run();  // Run scheduled tasks
+        m_webServer.handleClient();  // Process any client requests
+
+        // Update ports
+        PortManager& portManager = PortManager::getInstance();
+        time_t now = time(NULL);
+        
+        for (int i = 0; i < MAX_PORTS; ++i) {
+            Ports& port = portManager.settings.ports[i];
+            if (port.isActive && difftime(now, port.lastUpdated) >= portManager.settings.REFRESH_RATE / 1000) {       
+                updatePort(port);
+                //passed so must have updated the port
+                port.lastUpdated = now;
+            }
+        }
+
+    } catch (const std::exception& e) { 
+        LogManager::getInstance().writeLog("*********MAJOR SYSTEM FAULT************");
+        LogManager::getInstance().writeLog("Caught std::exception: " + String(e.what()));
+    } catch(...) {
+        LogManager::getInstance().writeLog("*********MAJOR SYSTEM FAULT************");
+        LogManager::getInstance().writeLog("*********UNKNOWN************");
+    }
 }
+
 void shutdown() {
     // Proper cleanup if necessary before shutdown
     LogManager::getInstance().writeLog("*********SYSTEM SHUTDOWN************");
 }
+
+void updatePort(Ports& port) {
+    try {
+        switch (port.circuitType) {
+            case ONOFF:
+                simulateONOFF(port);
+                break;
+            case MA420:
+                simulateMA420(port);
+                break;
+            case CTEMP:
+                simulateCTEMP(port);
+                break;
+            case VALVE:
+                simulateVALVE(port);
+                break;
+            case FILL:
+                simulateFILL(port);
+                break;
+            case PULSE:
+                simulatePULSE(port);
+                break;
+            default:
+                strncpy(port.state, "UNKNOWN", sizeof(port.state));
+                break;
+        }
+    } catch (const std::exception& e) {
+        LogManager::getInstance().writeLog("Error updating port: " + String(e.what()));
+    } catch (...) {
+        LogManager::getInstance().writeLog("Unknown error updating port.");
+    }
+}
+
+void simulateONOFF(Ports& port) {
+    if (port.isSimulated) {
+        port.currentReading = port.currentReading == 0 ? 1 : 0;
+        if(port.currentReading == 0){
+
+        strcpy(port.state, String("OFF").c_str());
+    
+        }else{
+          strcpy(port.state, String("ON").c_str());
+        }
+    }
+    // Implement the actual read/write logic for ONOFF ports
+}
+
+void simulateMA420(Ports& port) {
+    if (port.isSimulated) {
+        int randomValue = random(0, 3);  // Generate a random number between 0 and 2
+        if (randomValue == 0) {
+            port.currentReading = 0;
+            strcpy(port.state, String("No Signal").c_str());
+        } else if (randomValue == 1) {
+            port.currentReading = 4;
+            strcpy(port.state, String("4 mA").c_str());
+        } else {
+            port.currentReading = 20;
+            strcpy(port.state, String("20 mA").c_str());
+        }
+    }
+    // Implement the actual read/write logic for MA420 ports
+}
+
+void simulateCTEMP(Ports& port) {
+    if (port.isSimulated) {
+        port.currentReading = random(-40, 100);  // Simulate a temperature reading
+    }
+    if(port.lastReading < port.currentReading){
+      strcpy(port.state, String("Warming").c_str());
+    }
+    if(port.lastReading == port.currentReading){
+      strcpy(port.state, String("Constant").c_str());
+    }
+    if(port.lastReading > port.currentReading){
+      strcpy(port.state, String("Cooling").c_str());
+    }
+
+    // Implement the actual read/write logic for temperature ports
+}
+
+void simulateVALVE(Ports& port) {
+    if (port.isSimulated) {
+        port.currentReading = port.currentReading == 0 ? 1 : 0;  // Simulate valve open/close
+    }
+    // Implement the actual read/write logic for valve ports
+    if(port.currentReading == 0){
+          strcpy(port.state, String("Closed").c_str());
+        }else{
+          strcpy(port.state, String("Open").c_str());
+        }
+}
+
+void simulateFILL(Ports& port) {
+    if (port.isSimulated) {
+        port.currentReading = random(0, 100);  // Simulate a fill level
+    }
+    String tmpStr =  String(port.currentReading) + "%";
+    strcpy(port.state, tmpStr.c_str());
+    
+    // Implement the actual read/write logic for fill ports
+}
+
+void simulatePULSE(Ports& port) {
+    if (port.isSimulated) {
+        port.currentReading = random(1, 100);  // Simulate a pulse reading
+    }
+    // Implement the actual read/write logic for pulse ports
+    strcpy(port.state, String("Active").c_str());
+}
+
+/*
+Documentation
+setup()
+
+    Purpose: Initializes system components and sets up the initial environment.
+    LogManager: Sets up the logging system.
+    EventScheduler: Schedules periodic tasks for memory check, network check, and settings backup.
+    PortManager: Initializes port configurations.
+    NetworkManager: Establishes network connectivity.
+    AdminServerManager: Initializes the admin web server for handling client requests.
+    Error Handling: Catches and logs exceptions during the setup process.
+
+loop()
+
+    Purpose: Main execution loop for running scheduled tasks, handling client requests, and updating port states.
+    Task Scheduling: Executes scheduled tasks.
+    Client Handling: Processes incoming client requests.
+    Port Updates: Iterates through each port and updates its state if the refresh time has elapsed.
+    Error Handling: Catches and logs exceptions during the main loop.
+
+shutdown()
+
+    Purpose: Handles cleanup operations before system shutdown.
+    LogManager: Logs a shutdown message.
+
+updatePort(Ports& port)
+
+    Purpose: Updates the state of a given port based on its circuit type.
+    Parameters:
+        Ports& port: The port object to be updated.
+    Error Handling: Catches and logs exceptions during the port update process.
+
+simulateONOFF(Ports& port)
+
+    Purpose: Simulates the behavior of an ON/OFF port.
+    Parameters:
+        Ports& port: The port object to be simulated.
+
+simulateMA420(Ports& port)
+
+    Purpose: Simulates the behavior of a 4-20mA port.
+    Parameters:
+        Ports& port: The port object to be simulated.
+
+simulateCTEMP(Ports& port)
+
+    Purpose: Simulates the behavior of a temperature port.
+    Parameters:
+        Ports& port: The port object to be simulated.
+
+simulateVALVE(Ports& port)
+
+    Purpose: Simulates the behavior of a valve port.
+    Parameters:
+        Ports& port: The port object to be simulated.
+
+simulateFILL(Ports& port)
+
+    Purpose: Simulates the behavior of a fill port.
+    Parameters:
+        Ports& port: The port object to be simulated.
+
+simulatePULSE(Ports& port)
+
+    Purpose: Simulates the behavior of a pulse port.
+    Parameters:
+        Ports& port: The port object to be simulated.
+
+*/
+

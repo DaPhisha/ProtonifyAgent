@@ -111,7 +111,10 @@ static void handleRoot(EthernetClient& client, const String& request,int content
          
         {"POST", "/ports/update", handlePortUpdate},   
         {"GET", "/js/script.js", handleJS},
-        {"GET", "/css/style.css", handleCSS}
+        {"GET", "/css/style.css", handleCSS},
+
+        {"GET", "/help", handleHelp}
+
     };
 
     handlers = localHandlers;
@@ -609,12 +612,20 @@ String AdminServerManager::extractValueFromPostData(String postData, String vari
 
 void AdminServerManager::handleJS(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
     //LOG("UN-AUTHENTICATED /js/script.js");
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: application/javascript");
+    client.println("Connection: close");
     client.print(ResourceHandler::getJavascript());
+    client.stop();
 }
 
 void AdminServerManager::handleCSS(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
     //LOG("UN-AUTHENTICATED /css/style.css");
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: text/css");
+    client.println("Connection: close");
     client.print(ResourceHandler::getCSS());
+    client.stop();
 }
 
 void AdminServerManager::handleError(EthernetClient& client, int errorCode, String errorMessage) {
@@ -694,15 +705,15 @@ void AdminServerManager::handleConsole(EthernetClient& client, const String& req
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: text/html");
     client.println("Connection: close");
-    //keep the the cookie
-    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400"); // This sets the token as a cookie valid for 24 hours
+    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;"); // This sets the token as a cookie valid for 24 hours
+    client.println();
     client.println("<!DOCTYPE HTML>");
     client.println("<html lang='en'>");
-    client.print(ResourceHandler::getHeader("Admin Settings"));
+    client.print(ResourceHandler::getHeaderRefresh("Logger Console"));
     client.println("<body>");
     client.print(ResourceHandler::getHeaderMenu());
-    
     client.println("<main class='main-content'>");
+  
     String user_message = "Welcome to the console logger.";
     client.println("<br><p class='centered-message'>" + user_message + "</p><br>");
 
@@ -729,20 +740,17 @@ void AdminServerManager::handleAdmin(EthernetClient& client, const String& reque
          handleError(client, 404, "Un-Authorized Access Request to /admin");
          return;
     }
-    LOG("AUTHORIZED ACCESS /admin GET");
-    //set the return headers
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: text/html");
     client.println("Connection: close");
-    //keep the the cookie
-    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400"); // This sets the token as a cookie valid for 24 hours
+    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;"); // This sets the token as a cookie valid for 24 hours
+    client.println();
     client.println("<!DOCTYPE HTML>");
     client.println("<html lang='en'>");
-    client.print(ResourceHandler::getHeader("Admin Settings"));
+    client.print(ResourceHandler::getHeaderRefresh("Admin Settings"));
     client.println("<body>");
     client.print(ResourceHandler::getHeaderMenu());
     client.println("<main class='main-content'>");
-
     client.println("<br><p class='centered-message' id='error-message'>Welcome please make sure to save your changes.</p><br>");
     String page =R"(
             <p class='centered-message'>Admin Settings</p>
@@ -847,10 +855,11 @@ void AdminServerManager::handleHomeLandingPage(EthernetClient& client, const Str
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: text/html");
     client.println("Connection: close");
-    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400"); // This sets the token as a cookie valid for 24 hours
+    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None; "); // This sets the token as a cookie valid for 24 hours
     client.println();
     client.println("<!DOCTYPE HTML>");
     client.println("<html lang='en'>");
+
     client.print(ResourceHandler::getHeader("Agent Dashboard"));
     client.println("<body>");
     client.print(ResourceHandler::getHeaderMenu());
@@ -908,7 +917,7 @@ void AdminServerManager::handleAnalogPorts(EthernetClient& client, const String&
   client.println("HTTP/1.1 200 OK");
   client.println("Content-Type: text/html");
   client.println("Connection: close");
-  client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400"); // This sets the token as a cookie valid for 24 hours
+  client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None; "); // This sets the token as a cookie valid for 24 hours
   client.println();
   client.println("<!DOCTYPE HTML>");
   client.println("<html lang='en'>");
@@ -1031,13 +1040,45 @@ void AdminServerManager::handlePortUpdate(EthernetClient& client, const String& 
     port.isSimulated = (isSimulatedStr == "on");
 
     // Check if the port is to be activated and validate if it can be safely activated
+    //ANALOG_INPUT, ANALOG_OUTPUT, DIGITAL_INPUT, DIGITAL_OUTPUT, PROGRAMMABLE_IO, PTEMP, HMI, ENCODER
     if (port.isActive) {
         if (port.pinType == DIGITAL_INPUT || port.pinType == DIGITAL_OUTPUT) {
             // Specific validation for digital ports
+
+            //NEED TO DEFINE RULES HERE
+
+
         } else if (port.pinType == ANALOG_INPUT || port.pinType == ANALOG_OUTPUT) {
             // Specific validation for analog ports
+
+            //NEED TO DEFINE RULES HERE
+
         } else if (port.pinType == PROGRAMMABLE_IO) {
             // Specific validation for programmable IO ports
+
+          //NEED TO DEFINE RULES HERE
+
+        } else if (port.pinType == PTEMP) {
+            // Specific validation for programmable IO ports
+
+        //NEED TO DEFINE RULES HERE
+
+
+
+        } else if (port.pinType == HMI) {
+            // Specific validation for programmable IO ports
+
+
+        //NEED TO DEFINE RULES HERE
+
+
+        }else if (port.pinType == ENCODER) {
+            // Specific validation for programmable IO ports
+
+
+        //NEED TO DEFINE RULES HERE
+
+
         } else {
             sendErrorResponse(client, "Invalid pin type for activation");
             return;
@@ -1145,11 +1186,11 @@ void AdminServerManager::handlePortsPage(EthernetClient& client, const String& r
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: text/html");
     client.println("Connection: close");
-    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400"); // This sets the token as a cookie valid for 24 hours
+    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;"); // This sets the token as a cookie valid for 24 hours
     client.println();
     client.println("<!DOCTYPE HTML>");
     client.println("<html lang='en'>");
-    client.print(ResourceHandler::getHeader(pageTitle));
+    client.print(ResourceHandler::getHeaderRefresh(pageTitle));
     client.println("<body>");
     client.print(ResourceHandler::getHeaderMenu());
     client.print(ResourceHandler::getPortMainContent());
@@ -1251,11 +1292,11 @@ void AdminServerManager::handleAllActivePorts(EthernetClient& client, const Stri
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: text/html");
     client.println("Connection: close");
-    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400"); // Set the token as a cookie valid for 24 hours
+    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;"); // Set the token as a cookie valid for 24 hours
     client.println();
     client.println("<!DOCTYPE HTML>");
     client.println("<html lang='en'>");
-    client.print(ResourceHandler::getHeader("All Active Port Manager"));
+    client.print(ResourceHandler::getHeaderRefresh("All Active Port Manager"));
     client.println("<body>");
     client.print(ResourceHandler::getHeaderMenu());
     client.print(ResourceHandler::getActivePortMainContent());
@@ -1309,5 +1350,28 @@ void AdminServerManager::handleGetAllActivePorts(EthernetClient& client, const S
     // Send the JSON response using the helper function
     sendSuccessResponseData(client, "SUCCESS: All active ports retrieved.", response);
 }
+void AdminServerManager::handleHelp(EthernetClient& client, const String& request,int contentLength, const String &authToken){
+if(authToken != m_activeToken){
+        LOG("UN-AUTHORIZED HELP SYSTMEM ACCESS");
+        sendErrorResponse(client, "FAILURE: Un-Authorized Access Request.  Please login to view this file.");
+        return;
+    }
 
+  LOG("Help File requested.");
+  client.println("HTTP/1.1 200 OK");
+  client.println("Content-Type: text/html");
+  client.println("Connection: close");
+  client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;");
+  client.println();
+  client.println("<!DOCTYPE HTML>");
+  client.println("<html lang='en'>");
+  client.print(ResourceHandler::getHeader("Help"));
+  client.println("<body>");
+  client.print(ResourceHandler::getHeaderMenu());
+  client.print(ResourceHandler::getHelpContent());
+  client.print(ResourceHandler::getFooter());
+  client.println("</body>");
+  client.println("</html>");
+  client.stop();
+}
 

@@ -42,6 +42,7 @@ private:
     static void handleReset(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void processAdmin(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleCSS(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+    static void handleHelp(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleJS(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleLogin(EthernetClient& client, const String& request,int contentLength, const String &authToken); 
     static void handleLogOut(EthernetClient& client, const String& request,int contentLength, const String &authToken);

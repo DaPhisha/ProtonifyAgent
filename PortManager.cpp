@@ -106,7 +106,7 @@ void PortManager::initializeDefaults() {
          
          strncpy(settings.SERIAL_NUMBER, "002A00453130510B31353431", sizeof(settings.SERIAL_NUMBER));
          strncpy(settings.MODEL, "PORTENTA", sizeof(settings.MODEL));
-         settings.REFRESH_RATE = 300000;
+         settings.REFRESH_RATE = 3000;
          strncpy(settings.SHARED_SECRET,  "12345678901234567890123456789012", sizeof(settings.SHARED_SECRET) - 1);
          settings.SHARED_SECRET[sizeof(settings.SHARED_SECRET) - 1] = '\0';
          strncpy(settings.CALL_HOME_URL,"http://192.168.10.199",sizeof(settings.CALL_HOME_URL));

@@ -796,18 +796,28 @@ const char* ResourceHandler::getJavascript() {
     )";
 }
 
-const char* ResourceHandler::getHeader(String title) {
-    String header = R"(
-      <head>
-<meta charset='UTF-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1.0'>
-<title>)";
-    header += title;
-    header += R"(</title>
-<link rel='stylesheet' href='/css/style.css'>
-</head>
-    )";
-    return header.c_str();
+const char*  ResourceHandler::getHeader(String title) {
+String content = "<head>";
+content+="<meta charset='UTF-8'>";
+content+="<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+content+="<title>" + title + "</title>";
+content+="<link rel='stylesheet' href='/css/style.css'>";
+content+="</head>";
+LOG("HERE");
+LOG(content);
+return content.c_str();
+}
+
+const char*  ResourceHandler::getHeaderRefresh(String title) {
+
+    String content = "<head>";
+    content += "<meta charset='UTF-8'>";
+    content += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+    content += "<meta http-equiv='refresh' content='" + String(PortManager::getInstance().settings.REFRESH_RATE) + "'>";
+    content += "<title>" + title + "</title>";
+    content += "<link rel='stylesheet' href='/css/style.css'>";
+    content += "</head>";
+    return content.c_str();
 }
 
 const char* ResourceHandler::getHeaderMenu(){
@@ -833,6 +843,7 @@ return R"(
                 </div>
             </div>
             <a href='/console'>Console</a>
+            <a href='/help'>Help</a>
             <a href='/logout'>Logout</a>
         </div>
         <button class='navbar-toggle' id='navbarToggle'>☰</button>
@@ -917,8 +928,6 @@ return R"(
           </div>
         </div><!-- End Large Card  -->
     )";
-
-
 }
 
 const char* ResourceHandler::getFooter() {
@@ -950,4 +959,108 @@ const char* ResourceHandler::getStatCard(String title, String value) {
     return statCard.c_str();
 }
 
+const char* ResourceHandler::getHelpContent() {
+    return R"(
+    <main class='main-content'>
+    <h1>Help - Protonify Agent 2.0.0</h1>
+    <h2>Overview</h2>
+    <p>The Protonify Agent Web System is designed to manage and monitor various ports on a device. This guide will walk you through the different functionalities available in the system, including viewing stats, updating settings, managing ports, and using the console.</p>
+
+    <h2>Stats Page</h2>
+    <p>The Stats Page provides an overview of the system's current status, including vital statistics such as uptime, memory usage, and network status.</p>
+
+    <h3>Elements on the Stats Page:</h3>
+    <ul>
+    <li><strong>System Uptime:</strong> Displays how long the system has been running since the last reboot.</li>
+    <li><strong>Flash Size:</strong> The total size of the flash memory available in the system.</li>
+    <li><strong>Flash Available:</strong> The amount of flash memory currently available for use.</li>
+    <li><strong>Flash %:</strong> The percentage of total flash memory that is currently available.</li>
+    <li><strong>Heap Used:</strong> The amount of heap memory currently in use.</li>
+    <li><strong>Heap %:</strong> The percentage of total heap memory that is currently in use.</li>
+    <li><strong>Ports Enabled:</strong> The number of active ports currently enabled on the system.</li>
+    </ul>
+
+    <h2>Settings Page</h2>
+    <p>The Settings Page allows you to configure various system parameters. Below are the settings available, along with their default values and descriptions:</p>
+
+    <h3>Admin Settings:</h3>
+    <ul>
+        <li><strong>Username:</strong> <em>Default:</em> admin. The username for logging into the admin interface.</li>
+        <li><strong>Password:</strong> <em>Default:</em> password. The password for logging into the admin interface.</li>
+    </ul>
+
+    <h3>WiFi Settings:</h3>
+    <ul>
+        <li><strong>SSID:</strong> <em>Default:</em> HAL2000. The SSID of the WiFi network to connect to.</li>
+        <li><strong>Password:</strong> <em>Default:</em> password. The password for the WiFi network.</li>
+    </ul>
+
+    <h3>Network Settings:</h3>
+    <ul>
+        <li><strong>IP Address:</strong> <em>Default:</em> 192.168.10.200. The static IP address assigned to the device.</li>
+        <li><strong>DNS Server:</strong> <em>Default:</em> 8.8.8.8. The DNS server used by the device.</li>
+        <li><strong>Gateway:</strong> <em>Default:</em> 192.168.10.1. The gateway IP address for the network.</li>
+        <li><strong>Subnet Mask:</strong> <em>Default:</em> 255.255.255.0. The subnet mask for the network.</li>
+        <li><strong>MAC Address:</strong> <em>Default:</em> DE:AD:BE:EF:FE:ED. The MAC address of the device.</li>
+    </ul>
+
+    <h3>Device Information:</h3>
+    <ul>
+        <li><strong>Serial Number:</strong> <em>Default:</em> 002A00453130510B31353431. The unique serial number of the device.</li>
+        <li><strong>Model:</strong> <em>Default:</em> PORTENTA. The model name of the device.</li>
+        <li><strong>Refresh Rate:</strong> <em>Default:</em> 300000 (milliseconds). The refresh rate for updating port data.</li>
+        <li><strong>Shared Secret:</strong> <em>Default:</em> 12345678901234567890123456789012. A shared secret key for secure communication.</li>
+        <li><strong>Call Home URL:</strong> <em>Default:</em> http://192.168.10.199. The URL the device calls for updates and registration.</li>
+        <li><strong>Registration Status:</strong> <em>Default:</em> false. Indicates if the device is registered.</li>
+    </ul>
+
+    <h2>Ports Page</h2>
+    <p>The Ports Page allows you to manage and monitor different ports on the device. Ports can be configured as active or inactive, and each port has specific settings based on its type.</p>
+
+    <h3>Adding/Removing Ports from Active:</h3>
+    <ul>
+        <li><strong>To Add a Port:</strong> Navigate to the Ports Page. Select the port you want to activate. Update its settings and mark it as active.</li>
+        <li><strong>To Remove a Port:</strong> Navigate to the Ports Page. Select the port you want to deactivate. Update its settings and mark it as inactive.</li>
+    </ul>
+
+    <h3>Configuring Ports for the Simulator:</h3>
+    <p>To configure a port to use the simulator, follow these steps:</p>
+    <ul>
+        <li>Navigate to the Ports Page.</li>
+        <li>Select the port you want to configure.</li>
+        <li>In the port settings, enable the simulation option.</li>
+        <li>Configure the simulation parameters as needed.</li>
+    </ul>
+
+    <h2>Console Page</h2>
+    <p>The Console Page provides advanced tools for managing the device, including resetting the system and viewing logs.</p>
+
+    <h3>Using the Console:</h3>
+    <ul>
+        <li><strong>Resetting the System:</strong> Navigate to the Console Page. Select the type of reset you want to perform (soft or factory reset). Confirm the reset action.</li>
+        <li><strong>Viewing Logs:</strong> Navigate to the Console Page. View the system logs to troubleshoot issues or monitor activity.</li>
+    </ul>
+
+    <h3>Default Settings for Reset:</h3>
+    <p>Performing a factory reset will restore the following default settings:</p>
+    <ul>
+        <li><strong>Admin Username:</strong> admin</li>
+        <li><strong>Admin Password:</strong> password</li>
+        <li><strong>WiFi SSID:</strong> HAL2000</li>
+        <li><strong>WiFi Password:</strong> password</li>
+        <li><strong>IP Address:</strong> 192.168.10.200</li>
+        <li><strong>DNS Server:</strong> 8.8.8.8</li>
+        <li><strong>Gateway:</strong> 192.168.10.1</li>
+        <li><strong>Subnet Mask:</strong> 255.255.255.0</li>
+        <li><strong>MAC Address:</strong> DE:AD:BE:EF:FE:ED</li>
+        <li><strong>Serial Number:</strong> 002A00453130510B31353431</li>
+        <li><strong>Model:</strong> PORTENTA</li>
+        <li><strong>Refresh Rate:</strong> 300000 milliseconds</li>
+        <li><strong>Shared Secret:</strong> 12345678901234567890123456789012</li>
+        <li><strong>Call Home URL:</strong> http://192.168.10.199</li>
+        <li><strong>Registration Status:</strong> false</li>
+    </ul>
+    </main>
+    )";
+}
 
