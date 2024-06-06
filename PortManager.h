@@ -20,14 +20,14 @@ Version: 1.0.0
 #define MAX_SERIAL 26
 #define MAX_MODEL 32
 #define MAX_SHARED_SECRET 32
-#define MAX_CALL_HOME_URL 128
+#define MAX_CALL_HOME_HOST 32
 #define MAX_SIGNATURE 16
 constexpr int MAX_DESCRIPTION = 16;
 constexpr int MAX_STATE_TXT = 32;
 //*******************************************************************
 //*******************************************************************
 //*******************************************************************
-const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH05272024";
+const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH06072024";
 
 enum CIRCUIT_TYPE {
     NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, CIRCUIT_TYPE_COUNT
@@ -67,7 +67,7 @@ struct AdminSettings {
         char MODEL[MAX_MODEL+1];
         uint32_t REFRESH_RATE;
         char SHARED_SECRET[MAX_SHARED_SECRET + 1];//32 plus end of line
-        char CALL_HOME_URL[MAX_CALL_HOME_URL +1];//128 plus end of line
+        char CALL_HOME_HOST[MAX_CALL_HOME_HOST +1];//128 plus end of line
         bool REGISTRATION_STATUS;
         char logEntries[MAX_LOG_ENTRIES][MAX_LOG_STRING_CHAR];
         size_t currentLogIndex;

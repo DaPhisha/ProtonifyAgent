@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <regex> //for pattern matching
+
 /*
   File: AdminServerManager.cpp
   Date Created: May 11, 2024
@@ -7,29 +8,6 @@
   Description: Code file for the administrative web server.
   Last Modified: May 11, 2024
   Version 2.0.0
-
-  struct AdminSettings {
-        char Admin_USERNAME[MAX_USERNAME+1];//plus end of line
-        char Admin_PASSWORD[MAX_PASSWORD+1];//plus end of line
-        char WIFI_SSID[MAX_SSID+1];//plus end of line
-        char WIFI_PASSWORD[MAX_PASSWORD+1];//plus end of line
-        uint8_t IP_ADDRESS[4];//always four no end of line
-        uint8_t GATEWAY[4];//always four no end of line
-        uint8_t DNS[4];//always four no end of line
-        uint8_t SUBNET[4];//always four no end of line
-        byte MAC[6];//always six no end of line
-        char SERIAL_NUMBER[MAX_SERIAL+1]; //plus end of line
-        char MODEL[MAX_MODEL+1];
-        uint32_t REFRESH_RATE;
-        char SHARED_SECRET[MAX_SHARED_SECRET + 1];//32 plus end of line
-        char CALL_HOME_URL[MAX_CALL_HOME_URL +1];//128 plus end of line
-        bool REGISTRATION_STATUS;
-        char logEntries[MAX_LOG_ENTRIES][MAX_LOG_STRING_CHAR];
-        size_t currentLogIndex;
-        time_t DATE_LAST_UPDATED;
-        time_t DATE_LAST_REBOOT;
-        Ports ports[MAX_PORTS];
-    };
 */
 //not sure I need these
 //#include "stm32h747xx.h"
@@ -72,6 +50,10 @@ static void handleRoot(EthernetClient& client, const String& request,int content
         
         {"GET", "/admin", handleAdmin},
         {"POST", "/admin", processAdmin},
+
+        {"GET", "/admin/register", handleAdminRegister},
+        {"POST", "/admin/unregister", handleAdminUnregister},
+        {"GET", "/admin/testssl", handleTestSSL},
         
         //all active ports
         {"GET", "/ports/active", handleAllActivePorts},
@@ -441,12 +423,12 @@ void AdminServerManager::processAdmin(EthernetClient& client, const String& requ
 
     String sharedSecret = extractValueFromPostData(request, "SHARED_SECRET");
     LOG("Found:  SHARED_SECRET = " + sharedSecret);
-    String callHomeURL = extractValueFromPostData(request, "CALL_HOME_URL");
-    LOG("Found:  CALL_HOME_URL = " + callHomeURL);
+    String callHomeHost = extractValueFromPostData(request, "CALL_HOME_HOST");
+    LOG("Found:  CALL_HOME_HOST = " + callHomeHost);
 
-    if (serialNumber.length() > MAX_SERIAL || model.length() > MAX_MODEL || sharedSecret.length() > MAX_SHARED_SECRET || !isValidURL(callHomeURL)) {
+    if (serialNumber.length() > MAX_SERIAL || model.length() > MAX_MODEL || sharedSecret.length() > MAX_SHARED_SECRET || !isValidIP(callHomeHost)) {
         isValid = false;
-        errorMessage += "Call home URL invalid. ";
+        errorMessage += "Call home Host IP invalid. ";
     }
     uint32_t refreshRate = refreshRateStr.toInt();
     if (refreshRate == 0) {
@@ -471,7 +453,7 @@ void AdminServerManager::processAdmin(EthernetClient& client, const String& requ
         strncpy(PortManager::getInstance().settings.MODEL, model.c_str(), MAX_MODEL);
         PortManager::getInstance().settings.REFRESH_RATE = refreshRate;
         strncpy(PortManager::getInstance().settings.SHARED_SECRET, sharedSecret.c_str(), MAX_SHARED_SECRET);
-        strncpy(PortManager::getInstance().settings.CALL_HOME_URL, urlDecode(callHomeURL).c_str(), MAX_CALL_HOME_URL);
+        strncpy(PortManager::getInstance().settings.CALL_HOME_HOST, urlDecode(callHomeHost).c_str(), MAX_CALL_HOME_HOST);
         
         //write the valid settings to flash
         PortManager::getInstance().writeToFlash();
@@ -733,13 +715,14 @@ void AdminServerManager::handleConsole(EthernetClient& client, const String& req
      client.stop();
 }
 
-void AdminServerManager::handleAdmin(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
-    //check to see if allowed
-    if(authToken != m_activeToken){
-         LOG("UN-AUTHORIZED ACCESS /admin GET");
-         handleError(client, 404, "Un-Authorized Access Request to /admin");
-         return;
+void AdminServerManager::handleAdmin(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    // Check to see if allowed
+    if(authToken != m_activeToken) {
+        LOG("UN-AUTHORIZED ACCESS /admin GET");
+        handleError(client, 404, "Un-Authorized Access Request to /admin");
+        return;
     }
+
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: text/html");
     client.println("Connection: close");
@@ -752,76 +735,105 @@ void AdminServerManager::handleAdmin(EthernetClient& client, const String& reque
     client.print(ResourceHandler::getHeaderMenu());
     client.println("<main class='main-content'>");
     client.println("<br><p class='centered-message' id='error-message'>Welcome please make sure to save your changes.</p><br>");
-    String page =R"(
-            <p class='centered-message'>Admin Settings</p>
-            <div class='admin-container'>
-                <form action='/admin' method='POST' class='admin-form' id='admin-form'>
-                    <div class='admin-card'>
-                        <div class='admin-card-header'>Admin Credentials</div>
-                        <div class='admin-card-content'>
-                            <label for='Admin_USERNAME'>Username</label>
-                            <input type='text' id='Admin_USERNAME' name='Admin_USERNAME' value='{{Admin_USERNAME}}' required>
-                            <label for='Admin_PASSWORD'>Password</label>
-                            <input type='password' id='Admin_PASSWORD' name='Admin_PASSWORD' value='{{Admin_PASSWORD}}' required>
-                            <input type="checkbox" id="togglePassword"> <p class='centered-message'>Show Password</p>
-                        </div>
+    String page = R"(
+        <p class='centered-message'>Admin Settings</p>
+        <div class='admin-container'>
+            <form action='/admin' method='POST' class='admin-form' id='admin-form'>
+                <div class='admin-card'>
+                    <div class='admin-card-header'>Admin Credentials</div>
+                    <div class='admin-card-content'>
+                        <label for='Admin_USERNAME'>Username</label>
+                        <input type='text' id='Admin_USERNAME' name='Admin_USERNAME' value='{{Admin_USERNAME}}' required>
+                        <label for='Admin_PASSWORD'>Password</label>
+                        <input type='password' id='Admin_PASSWORD' name='Admin_PASSWORD' value='{{Admin_PASSWORD}}' required>
+                        <input type="checkbox" id="togglePassword"> <p class='centered-message'>Show Password</p>
                     </div>
+                </div>
 
-                    <div class='admin-card'>
-                        <div class='admin-card-header'>WiFi Settings</div>
-                        <div class='admin-card-content'>
-                            <label for='WIFI_SSID'>SSID</label>
-                            <input type='text' id='WIFI_SSID' name='WIFI_SSID' value='{{WIFI_SSID}}' required>
-                            <label for='WIFI_PASSWORD'>Password</label>
-                            <input type='password' id='WIFI_PASSWORD' name='WIFI_PASSWORD' value='{{WIFI_PASSWORD}}' required>
-                            <input type="checkbox" id="toggleWifiPassword"> <p class='centered-message'>Show Password<p>
-                        </div>
+                <div class='admin-card'>
+                    <div class='admin-card-header'>WiFi Settings</div>
+                    <div class='admin-card-content'>
+                        <label for='WIFI_SSID'>SSID</label>
+                        <input type='text' id='WIFI_SSID' name='WIFI_SSID' value='{{WIFI_SSID}}' required>
+                        <label for='WIFI_PASSWORD'>Password</label>
+                        <input type='password' id='WIFI_PASSWORD' name='WIFI_PASSWORD' value='{{WIFI_PASSWORD}}' required>
+                        <input type="checkbox" id="toggleWifiPassword"> <p class='centered-message'>Show Password<p>
                     </div>
+                </div>
 
-                    <div class='admin-card'>
-                        <div class='admin-card-header'>Network Settings</div>
-                        <div class='admin-card-content'>
-                            <label for='IP_ADDRESS'>IP Address</label>
-                            <input type='text' id='IP_ADDRESS' name='IP_ADDRESS' value='{{IP_ADDRESS}}' required>
-                            <label for='GATEWAY'>Gateway</label>
-                            <input type='text' id='GATEWAY' name='GATEWAY' value='{{GATEWAY}}' required>
-                            <label for='DNS'>DNS</label>
-                            <input type='text' id='DNS' name='DNS' value='{{DNS}}' required>
-                            <label for='SUBNET'>Subnet</label>
-                            <input type='text' id='SUBNET' name='SUBNET' value='{{SUBNET}}' required>
-                            <label for='MAC'>MAC Address</label>
-                            <input type='text' id='MAC' name='MAC' value='{{MAC}}' required>
-                        </div>
+                <div class='admin-card'>
+                    <div class='admin-card-header'>Network Settings</div>
+                    <div class='admin-card-content'>
+                        <label for='IP_ADDRESS'>IP Address</label>
+                        <input type='text' id='IP_ADDRESS' name='IP_ADDRESS' value='{{IP_ADDRESS}}' required>
+                        <label for='GATEWAY'>Gateway</label>
+                        <input type='text' id='GATEWAY' name='GATEWAY' value='{{GATEWAY}}' required>
+                        <label for='DNS'>DNS</label>
+                        <input type='text' id='DNS' name='DNS' value='{{DNS}}' required>
+                        <label for='SUBNET'>Subnet</label>
+                        <input type='text' id='SUBNET' name='SUBNET' value='{{SUBNET}}' required>
+                        <label for='MAC'>MAC Address</label>
+                        <input type='text' id='MAC' name='MAC' value='{{MAC}}' required>
                     </div>
+                </div>
 
-                    <div class='admin-card'>
-                        <div class='admin-card-header'>Device Information</div>
-                        <div class='admin-card-content'>
-                            <label for='SERIAL_NUMBER'>Serial Number</label>
-                            <input type='text' id='SERIAL_NUMBER' name='SERIAL_NUMBER' value='{{SERIAL_NUMBER}}' required>
-                            <label for='MODEL'>Model</label>
-                            <input type='text' id='MODEL' name='MODEL' value='{{MODEL}}' required>
-                            <label for='REFRESH_RATE'>Refresh Rate</label>
-                            <input type='number' id='REFRESH_RATE' name='REFRESH_RATE' value='{{REFRESH_RATE}}' required>
-                            <label for='SHARED_SECRET'>Shared Secret</label>
-                            <input type='text' id='SHARED_SECRET' name='SHARED_SECRET' value='{{SHARED_SECRET}}' required>
-                            <label for='CALL_HOME_URL'>Call Home URL</label>
-                            <input type='text' id='CALL_HOME_URL' name='CALL_HOME_URL' value='{{CALL_HOME_URL}}' required>
-                            <label for='REGISTRATION_STATUS'>Registration Status</label>
-                            <input type='checkbox' id='REGISTRATION_STATUS' name='REGISTRATION_STATUS' {{REGISTRATION_STATUS}} disabled>
-                        </div>
+                <div class='admin-card'>
+                    <div class='admin-card-header'>Device Information</div>
+                    <div class='admin-card-content'>
+                        <label for='SERIAL_NUMBER'>Serial Number</label>
+                        <input type='text' id='SERIAL_NUMBER' name='SERIAL_NUMBER' value='{{SERIAL_NUMBER}}' required>
+                        <label for='MODEL'>Model</label>
+                        <input type='text' id='MODEL' name='MODEL' value='{{MODEL}}' required>
+                        <label for='REFRESH_RATE'>Refresh Rate</label>
+                        <input type='number' id='REFRESH_RATE' name='REFRESH_RATE' value='{{REFRESH_RATE}}' required>
+                        <label for='SHARED_SECRET'>Shared Secret</label>
+                        <input type='text' id='SHARED_SECRET' name='SHARED_SECRET' value='{{SHARED_SECRET}}' required>
+                        <label for='CALL_HOME_HOST'>Call Home Host IP</label>
+                        <input type='text' id='CALL_HOME_HOST' name='CALL_HOME_HOST' value='{{CALL_HOME_HOST}}' required>
+                        <label for='REGISTRATION_STATUS'>Registration Status</label>
+                        <input type='checkbox' id='REGISTRATION_STATUS' name='REGISTRATION_STATUS' {{REGISTRATION_STATUS}} disabled>
                     </div>
-                    <div class='center'>
+                </div>
+                <div class='center'>
                     <button type='submit' class='admin-submit-button'>Update Settings</button>
+                </div>
+            </form>
+            
+            <!-- Cards Wrapper -->
+            <div class="cards-wrapper">
+                <!-- Test SSL Card -->
+                <div class='admin-card'>
+                    <div class='admin-card-header'>Test SSL Connection</div>
+                    <div class='admin-card-content'>
+                        <button id='test-ssl-button' class='admin-submit-button'>Test SSL Connection</button>
+                        <p id='ssl-status-message' class='centered-message'></p>
+                    </div>
+                </div>
+                
+                <!-- Reset Card -->
+                <form action='/console/reset' method='POST' class='reset-form'>
+                    <div class='admin-card'>
+                        <div class='admin-card-header'>Reset Options</div>
+                        <div class='admin-card-content'>
+                            <label for='resetType'>Select Reset Option:</label>
+                            <select id='resetType' name='resetType' required>
+                                <option value='soft'>Soft Reset</option>
+                                <option value='factory'>Factory Reset</option>
+                            </select>
+                        </div>
+                        <button type='submit' class='admin-submit-button'>Reset</button>
                     </div>
                 </form>
                 
+                <!-- Register Card -->
+                {{REGISTER_CARD}}
             </div>
+            <br><br>
+        </div>
     )";
 
     // Replace placeholders with actual settings values
     page.replace("{{Admin_USERNAME}}", String(PortManager::getInstance().settings.Admin_USERNAME));
-    
     page.replace("{{Admin_PASSWORD}}", String(PortManager::getInstance().settings.Admin_PASSWORD));
     page.replace("{{WIFI_SSID}}", String(PortManager::getInstance().settings.WIFI_SSID));
     page.replace("{{WIFI_PASSWORD}}", String(PortManager::getInstance().settings.WIFI_PASSWORD));
@@ -834,21 +846,93 @@ void AdminServerManager::handleAdmin(EthernetClient& client, const String& reque
     page.replace("{{MODEL}}", String(PortManager::getInstance().settings.MODEL));
     page.replace("{{REFRESH_RATE}}", String(PortManager::getInstance().settings.REFRESH_RATE));
     page.replace("{{SHARED_SECRET}}", String(PortManager::getInstance().settings.SHARED_SECRET));
-    page.replace("{{CALL_HOME_URL}}", String(PortManager::getInstance().settings.CALL_HOME_URL));
+    page.replace("{{CALL_HOME_HOST}}", String(PortManager::getInstance().settings.CALL_HOME_HOST));
     page.replace("{{REGISTRATION_STATUS}}", PortManager::getInstance().settings.REGISTRATION_STATUS ? "checked" : "");
+
+    // Add the registration card
+    String registerCard = ResourceHandler::getRegisterCard(PortManager::getInstance().settings.REGISTRATION_STATUS);
+    page.replace("{{REGISTER_CARD}}", registerCard);
     
     client.println(page);
-    client.println("<div class='center'>");
-    client.print(ResourceHandler::getResetCard());
-    client.println("</div>");
     client.println("</main>");
-     //close page with footer
+
+    // Close page with footer
     client.print(ResourceHandler::getFooter());
-    //close out body and page
+
+    // Close out body and page
     client.println("</body>");
     client.println("</html>");
     client.stop();
 }
+
+void AdminServerManager::handleAdminRegister(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    // Check to see if allowed
+    if(authToken != m_activeToken){
+         LOG("UN-AUTHORIZED ACCESS /admin/register POST");
+         handleError(client, 404, "Un-Authorized Access Request to /admin/register");
+         return;
+    }
+
+    // Prepare JSON data excluding log entries and ports
+    String jsonData = "{";
+    jsonData += "\"Admin_USERNAME\":\"" + String(PortManager::getInstance().settings.Admin_USERNAME) + "\",";
+    jsonData += "\"Admin_PASSWORD\":\"" + String(PortManager::getInstance().settings.Admin_PASSWORD) + "\",";
+    jsonData += "\"WIFI_SSID\":\"" + String(PortManager::getInstance().settings.WIFI_SSID) + "\",";
+    jsonData += "\"WIFI_PASSWORD\":\"" + String(PortManager::getInstance().settings.WIFI_PASSWORD) + "\",";
+    jsonData += "\"IP_ADDRESS\":\"" + PortManager::getInstance().ipToString(PortManager::getInstance().settings.IP_ADDRESS) + "\",";
+    jsonData += "\"GATEWAY\":\"" + PortManager::getInstance().ipToString(PortManager::getInstance().settings.GATEWAY) + "\",";
+    jsonData += "\"DNS\":\"" + PortManager::getInstance().ipToString(PortManager::getInstance().settings.DNS) + "\",";
+    jsonData += "\"SUBNET\":\"" + PortManager::getInstance().ipToString(PortManager::getInstance().settings.SUBNET) + "\",";
+    jsonData += "\"MAC\":\"" + PortManager::getInstance().macToString(PortManager::getInstance().settings.MAC) + "\",";
+    jsonData += "\"SERIAL_NUMBER\":\"" + String(PortManager::getInstance().settings.SERIAL_NUMBER) + "\",";
+    jsonData += "\"MODEL\":\"" + String(PortManager::getInstance().settings.MODEL) + "\",";
+    jsonData += "\"REFRESH_RATE\":\"" + String(PortManager::getInstance().settings.REFRESH_RATE) + "\",";
+    jsonData += "\"SHARED_SECRET\":\"" + String(PortManager::getInstance().settings.SHARED_SECRET) + "\",";
+    jsonData += "\"CALL_HOME_HOST\":\"" + String(PortManager::getInstance().settings.CALL_HOME_HOST) + "\"";
+    jsonData += "}";
+
+    // Send JSON data to CALL_HOME_HOST for registration
+    bool success = sendJsonData(PortManager::getInstance().settings.CALL_HOME_HOST, jsonData);
+
+    if (success) {
+        PortManager::getInstance().settings.REGISTRATION_STATUS = true;
+        PortManager::getInstance().writeToFlash();
+        LOG("Device registered successfully");
+    } else {
+        LOG("Device registration failed");
+    }
+
+    handleAdmin(client, request, contentLength, authToken);
+}
+
+void AdminServerManager::handleAdminUnregister(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+    // Check to see if allowed
+    if(authToken != m_activeToken){
+         LOG("UN-AUTHORIZED ACCESS /admin/unregister POST");
+         handleError(client, 404, "Un-Authorized Access Request to /admin/unregister");
+         return;
+    }
+
+    // Prepare JSON data excluding log entries and ports
+    String jsonData = "{";
+    jsonData += "\"SERIAL_NUMBER\":\"" + String(PortManager::getInstance().settings.SERIAL_NUMBER) + "\",";
+    jsonData += "\"MODEL\":\"" + String(PortManager::getInstance().settings.MODEL) + "\"";
+    jsonData += "}";
+
+    // Send JSON data to CALL_HOME_URL for unregistration
+    bool success = sendJsonData(PortManager::getInstance().settings.CALL_HOME_HOST, jsonData);
+
+    if (success) {
+        PortManager::getInstance().settings.REGISTRATION_STATUS = false;
+        PortManager::getInstance().writeToFlash();
+        LOG("Device unregistered successfully");
+    } else {
+        LOG("Device unregistration failed");
+    }
+
+    handleAdmin(client, request, contentLength, authToken);
+}
+
 void AdminServerManager::handleHomeLandingPage(EthernetClient& client, const String& request, String user_message){
 
     //would not be here unless authenticated
@@ -1373,5 +1457,51 @@ if(authToken != m_activeToken){
   client.println("</body>");
   client.println("</html>");
   client.stop();
+}
+
+bool AdminServerManager::sendJsonData(const String& url, const String& jsonData) {
+  //EthernetClient client;
+
+//  client.connectSSL()
+    /*HTTPClient http;
+    http.begin(url);
+    http.addHeader("Content-Type", "application/json");
+
+    int httpResponseCode = http.POST(jsonData);
+    if (httpResponseCode > 0) {
+        String response = http.getString();
+        LOG("HTTP Response code: " + String(httpResponseCode));
+        LOG("Response: " + response);
+        http.end();
+        return true;
+    } else {
+        LOG("Error on sending POST: " + String(httpResponseCode));
+        http.end();
+        return false;
+    }*/
+    return false;
+}
+void AdminServerManager::handleTestSSL(EthernetClient& client, const String& request, int contentLength, const String& authToken) {
+    LOG("CONNECTION TEST SSL");
+    if (authToken != m_activeToken) {
+        LOG("UN-AUTHORIZED ACCESS /admin/testssl");
+        handleError(client, 404, "Un-Authorized Access Request to /admin/testssl");
+        return;
+    }
+
+    LOG("AUTHORIZED ACCESS /admin/testssl");
+
+    String host = String(PortManager::getInstance().settings.CALL_HOME_HOST);
+    NetworkManager& networkManager = NetworkManager::getInstance();
+    bool result = networkManager.testSSLConnection(host.c_str());
+
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: application/json");
+    client.println("Connection: close");
+    client.println();
+    client.print("{\"message\":\"");
+    client.print(result ? "SSL connection successful!" : "SSL connection failed!");
+    client.println("\"}");
+    client.stop();
 }
 

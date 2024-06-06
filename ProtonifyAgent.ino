@@ -21,8 +21,8 @@ Define port logic rules on what ports can be assigned which circuit types.  CRIT
 
 #include <Arduino_PortentaMachineControl.h>
 #include <Arduino.h>
-#include <Ethernet.h>
-#include <EthernetUdp.h>
+//#include <Ethernet.h>
+//#include <EthernetUdp.h>
 #include <NTPClient.h>
 #include <time.h>
 #include "LogManager.h"
@@ -225,74 +225,3 @@ void simulatePULSE(Ports& port) {
     // Implement the actual read/write logic for pulse ports
     strcpy(port.state, String("Active").c_str());
 }
-
-/*
-Documentation
-setup()
-
-    Purpose: Initializes system components and sets up the initial environment.
-    LogManager: Sets up the logging system.
-    EventScheduler: Schedules periodic tasks for memory check, network check, and settings backup.
-    PortManager: Initializes port configurations.
-    NetworkManager: Establishes network connectivity.
-    AdminServerManager: Initializes the admin web server for handling client requests.
-    Error Handling: Catches and logs exceptions during the setup process.
-
-loop()
-
-    Purpose: Main execution loop for running scheduled tasks, handling client requests, and updating port states.
-    Task Scheduling: Executes scheduled tasks.
-    Client Handling: Processes incoming client requests.
-    Port Updates: Iterates through each port and updates its state if the refresh time has elapsed.
-    Error Handling: Catches and logs exceptions during the main loop.
-
-shutdown()
-
-    Purpose: Handles cleanup operations before system shutdown.
-    LogManager: Logs a shutdown message.
-
-updatePort(Ports& port)
-
-    Purpose: Updates the state of a given port based on its circuit type.
-    Parameters:
-        Ports& port: The port object to be updated.
-    Error Handling: Catches and logs exceptions during the port update process.
-
-simulateONOFF(Ports& port)
-
-    Purpose: Simulates the behavior of an ON/OFF port.
-    Parameters:
-        Ports& port: The port object to be simulated.
-
-simulateMA420(Ports& port)
-
-    Purpose: Simulates the behavior of a 4-20mA port.
-    Parameters:
-        Ports& port: The port object to be simulated.
-
-simulateCTEMP(Ports& port)
-
-    Purpose: Simulates the behavior of a temperature port.
-    Parameters:
-        Ports& port: The port object to be simulated.
-
-simulateVALVE(Ports& port)
-
-    Purpose: Simulates the behavior of a valve port.
-    Parameters:
-        Ports& port: The port object to be simulated.
-
-simulateFILL(Ports& port)
-
-    Purpose: Simulates the behavior of a fill port.
-    Parameters:
-        Ports& port: The port object to be simulated.
-
-simulatePULSE(Ports& port)
-
-    Purpose: Simulates the behavior of a pulse port.
-    Parameters:
-        Ports& port: The port object to be simulated.
-
-*/
-

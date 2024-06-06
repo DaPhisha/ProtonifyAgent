@@ -109,7 +109,7 @@ void PortManager::initializeDefaults() {
          settings.REFRESH_RATE = 3000;
          strncpy(settings.SHARED_SECRET,  "12345678901234567890123456789012", sizeof(settings.SHARED_SECRET) - 1);
          settings.SHARED_SECRET[sizeof(settings.SHARED_SECRET) - 1] = '\0';
-         strncpy(settings.CALL_HOME_URL,"http://192.168.10.199",sizeof(settings.CALL_HOME_URL));
+         strncpy(settings.CALL_HOME_HOST,"192.168.10.199",sizeof(settings.CALL_HOME_HOST));
          settings.REGISTRATION_STATUS = false;
          // Initialize date fields
          settings.DATE_LAST_UPDATED = time(NULL);  
@@ -132,8 +132,8 @@ void PortManager::initializeDefaults() {
          //write the current signature and settings to flash so its there next
          writeToFlash();
     } catch (const std::exception& e) {
-        // If an exception occurs, clean up already allocated ports
-        throw;  // Re-throw to handle the error further up the call stack
+        
+        throw;  
     }
 }
 
@@ -455,7 +455,7 @@ String PortManager::toString() {
        << "Model: " << settings.MODEL << "\n"
        << "Refresh Rate: " << settings.REFRESH_RATE << "ms\n"
        << "Shared Secret: " << settings.SHARED_SECRET << "\n" // Consider masking this for security
-       << "URL: " << settings.CALL_HOME_URL << "\n"
+       << "Host: " << settings.CALL_HOME_HOST << "\n"
        << "Registration Status: " << (settings.REGISTRATION_STATUS ? "Registered" : "Not Registered") << "\n"
        << "Last Updated: " << ctime(&settings.DATE_LAST_UPDATED)
        << "Last Reboot: " << ctime(&settings.DATE_LAST_REBOOT);
@@ -479,7 +479,7 @@ String PortManager::toHTML() {
        << "<p><strong>Model:</strong> " << settings.MODEL << "</p>"
        << "<p><strong>Refresh Rate:</strong> " << settings.REFRESH_RATE << "ms</p>"
        << "<p><strong>Shared Secret:</strong> " << "********" << "</p>" // Shared secret masked for security
-       << "<p><strong>URL:</strong> " << settings.CALL_HOME_URL << "</p>"
+       << "<p><strong>Host:</strong> " << settings.CALL_HOME_HOST << "</p>"
        << "<p><strong>Registration Status:</strong> " << (settings.REGISTRATION_STATUS ? "Registered" : "Not Registered") << "</p>"
        << "<p><strong>Last Updated:</strong> " << ctime(&settings.DATE_LAST_UPDATED) << "</p>"
        << "<p><strong>Last Reboot:</strong> " << ctime(&settings.DATE_LAST_REBOOT) << "</p>";

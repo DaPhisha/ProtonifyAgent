@@ -28,6 +28,7 @@ public:
     static const char* getMessageDiv(String msg);
     static const char* getActivePortMainContent();
     static const char* getHelpContent(); 
+    static const char* getRegisterCard(bool isRegistered);
 };
 
 #endif // RESOURCE_HANDLER_H

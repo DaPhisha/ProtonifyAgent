@@ -358,7 +358,29 @@ body {
     transition: box-shadow 0.3s ease, transform 0.3s ease;
     margin: 10px; /* Ensure there's spacing between cards */
 }
-
+/* Reset Card */
+.reset-card {
+    width: 250px; /* Adjust width as needed */
+    background-color: gray;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: inline-block;
+    /*flex-direction: column;*/
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    margin-bottom: 50px; /* Ensure there's spacing at bottom of cards */
+}
+.register-card {
+    width: 250px; /* Adjust width as needed */
+    background-color: red;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: inline-block;
+    /*flex-direction: column;*/
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    margin-bottom: 50px; /* Ensure there's spacing at bottom of cards */
+}
 .admin-card:hover {
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
     transform: translateY(-5px);
@@ -504,7 +526,6 @@ body {
 /* General styling for live data */
 .live-data {
     margin-top: 10px;
-    //padding: 10px;
     border-radius: 5px;
     background-color: #f9f9f9;
 }
@@ -541,7 +562,7 @@ body {
 /* Valve circuit type styling */
 .live-data.valve {
     background-color: #fff !important;
-    color: #blue !important;
+    color: blue !important;
 }
 
 /* Fill circuit type styling */
@@ -554,6 +575,19 @@ body {
 .live-data.pulse {
     background-color: #fff !important;
     color: #d84315 !important;
+}
+/* Add this CSS to align the cards in a row */
+.cards-wrapper {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.cards-wrapper .admin-card {
+    flex: 1 1 30%; /* Adjust the percentage as needed */
+    margin: 10px;
+    min-width: 300px; /* Ensure a minimum width for smaller screens */
 }
 
     )";
@@ -789,10 +823,39 @@ const char* ResourceHandler::getJavascript() {
         `;
     }
 
+    const testSSLButton = document.getElementById('test-ssl-button');
+    const sslStatusMessage = document.getElementById('ssl-status-message');
+    
+    if (testSSLButton) {
+        testSSLButton.addEventListener('click', function() {
+            console.log('Test SSL');
+            sslStatusMessage.textContent = 'Testing SSL connection...';
+            sslStatusMessage.style.color = 'blue';
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', '/admin/testssl', true);
+            xhr.onload = function() {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    console.log('Response received:', response);
+                    sslStatusMessage.textContent = response.message;
+                    sslStatusMessage.style.color = xhr.status === 200 ? 'green' : 'red';
+                } catch (e) {
+                    console.error('Error parsing JSON response:', e);
+                    sslStatusMessage.textContent = 'Error parsing response';
+                    sslStatusMessage.style.color = 'red';
+                }
+            };
+            xhr.onerror = function() {
+                sslStatusMessage.textContent = 'Request failed connection to Protonify Agent';
+                sslStatusMessage.style.color = 'red';
+                console.error('Failed sending to Agent');
+            };
+            xhr.send();
+        });
+    }
 });
 
-
-    
     )";
 }
 
@@ -870,7 +933,7 @@ const char* ResourceHandler::getActivePortMainContent() {
 const char* ResourceHandler::getResetCard(){
 return R"(
 <form action='/console/reset' method='POST' class='reset-form'>
-            <div class='admin-card'>
+            <div class='reset-card'>
                 <div class='admin-card-header'>Reset Options</div>
                 <div class='admin-card-content'>
                     <label for='resetType'>Select Reset Option:</label>
@@ -883,6 +946,33 @@ return R"(
             </div>
         </form>
          )";
+}
+
+const char* ResourceHandler::getRegisterCard(bool isRegistered) {
+    String card = R"(
+        <div class='register-card' style='background-color: {{CARD_COLOR}};'>
+            <div class='admin-card-header'>Registration Status</div>
+            <div class='admin-card-content'>
+                <p>{{STATUS_MESSAGE}}</p>
+                <form action='/admin/{{ACTION}}' method='POST'>
+                    <button type='submit'>{{BUTTON_TEXT}}</button>
+                </form>
+            </div>
+        </div>
+    )";
+
+    if (isRegistered) {
+        card.replace("{{CARD_COLOR}}", "green");
+        card.replace("{{STATUS_MESSAGE}}", "Device is registered.");
+        card.replace("{{ACTION}}", "unregister");
+        card.replace("{{BUTTON_TEXT}}", "Deregister");
+    } else {
+        card.replace("{{CARD_COLOR}}", "red");
+        card.replace("{{STATUS_MESSAGE}}", "Device is not registered.");
+        card.replace("{{ACTION}}", "register");
+        card.replace("{{BUTTON_TEXT}}", "Register");
+    }
+    return card.c_str();
 }
 
 const char* ResourceHandler::getMessageDiv(String message){
@@ -1063,4 +1153,3 @@ const char* ResourceHandler::getHelpContent() {
     </main>
     )";
 }
-

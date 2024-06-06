@@ -15,6 +15,7 @@
 #include "PortManager.h"
 #include "LogManager.h"
 #include "FlashAPILimits.h"
+#include "NetworkManager.h"
 #define TOKEN_LENGTH 32 
 #define HTTP_SERVER_PORT 80
 #define DASHBOARD_REFRESH 3000 //miliseconds to refresh dashboard
@@ -46,8 +47,15 @@ private:
     static void handleJS(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleLogin(EthernetClient& client, const String& request,int contentLength, const String &authToken); 
     static void handleLogOut(EthernetClient& client, const String& request,int contentLength, const String &authToken);
+
+    static void handleAdminUnregister(EthernetClient& client, const String& request, int contentLength, const String &authToken);
+    static void handleAdminRegister(EthernetClient& client, const String& request, int contentLength, const String &authToken);
     
-   
+    static void handleTestSSL(EthernetClient& client, const String& request, int contentLength, const String& authToken);
+
+    //send json payload to server
+    static bool sendJsonData(const String& url, const String& jsonData);
+
     //PORT HANDLERS
     static void handleGetAnalogINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
     static void handleAnalogINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);

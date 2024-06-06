@@ -43,6 +43,9 @@ public:
 
     // Check if the network is still connected
     bool checkNetworkConnection();
+
+    // Test SSL connection
+    bool testSSLConnection(const char* host);
 };
 
 #endif // NETWORK_MANAGER_ 
