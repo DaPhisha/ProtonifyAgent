@@ -23,9 +23,7 @@ Port::Port(int port, int pin, PIN_TYPE pType, CIRCUIT_TYPE cType, const char* de
 
 //intialization for the port.  Best practice to setup the port safely
 void Port::initialize() {
-    //LOG("Initializing port: " + String(pinNumber) + " " + String(pinDescription));
     isActive = true;
-    //updateState();
 }
 void Port::read() {
     if (!isActive) {

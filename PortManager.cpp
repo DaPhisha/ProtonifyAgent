@@ -4,15 +4,6 @@ Date Created: April 29, 2024
 Authors: DaPhisha
 Description: Implementation of the PortManager class which handles the lifecycle and state management of Port objects, including interactions with flash memory for persistence.
 Version: 1.0.0
- //see stm32h747xx.h
-      
-      Device Peripheral Access Layer Header File.
-            This file contains:
-             - Data structures and the address mapping for all peripherals
-             - Peripheral's registers declarations and bits definition
-             - Macros to access peripheral's registers hardware
-      
-      //DebugMonitor_IRQn 
 */
 
 #include "PortManager.h"
@@ -29,8 +20,6 @@ void PortManager::init() {
         LOG("FAILED Writing to flash.  Initiating Defaults");
         initializeDefaults();
     }else{
-      //
-      DEBUG("LOADED FOUND MEMORY from FLASH!");
       isInitialized = true;
     }
 }
@@ -43,47 +32,26 @@ PortManager::~PortManager() {
     //assum we should write the current DB to flash but maybe not 
     //writeToFlash();
 }
-  //from the Portenta Machine Control manual
-  /*Port Details
-  8 X Digital Input Channels (0-24V)
-  8 X Digital Output Channels 24V power supply
-  3 X Analog Input (0-10V or 4-20mA input)
-  4 X Analog Output Channels (0-10V DC Max 20mA per channel)
-  12 X Digital Programmable channels
-  3 X Tenp Channels
-  2 X Encoder Channels ABZ
-  1 X RS-232/ RA-422/Rs-485 
-  */
-
-
-
 
 void PortManager::initializeDefaults() {
-    DEBUG("SETTING SYSTEM DEFAULTS");
     try {
 
         //set default Admin items
         strncpy(settings.Admin_USERNAME, "admin", sizeof(settings.Admin_USERNAME));
         //set default password
         strncpy(settings.Admin_PASSWORD, "password", sizeof(settings.Admin_PASSWORD));
-
-
         strncpy(settings.WIFI_SSID, "HAL2000", sizeof(settings.WIFI_SSID));
         strncpy(settings.WIFI_PASSWORD, "password", sizeof(settings.WIFI_PASSWORD));
-
-
          //Default IP Address
          settings.IP_ADDRESS[0] = 192;
          settings.IP_ADDRESS[1] = 168;
          settings.IP_ADDRESS[2] = 10;
          settings.IP_ADDRESS[3] = 200;
-
          //default IP Address
          settings.DNS[0] = 8;
          settings.DNS[1] = 8;
          settings.DNS[2] = 8;
          settings.DNS[3] = 8;
-         
          //Default Gateway
          settings.GATEWAY[0] = 192;
          settings.GATEWAY[1] = 168;
@@ -120,16 +88,8 @@ void PortManager::initializeDefaults() {
          for(int i = 0; i < MAX_LOG_ENTRIES; i++){
               settings.logEntries[i][0]= '\0';
          }
-         
-         
-         LOG("LOADED SYSTEM DEFAULTS COMPLETE...writing settings to flash");
-        
-
-
-         //completed initializtion
          isInitialized = true;
          loadPortDefaults();
-         //write the current signature and settings to flash so its there next
          writeToFlash();
     } catch (const std::exception& e) {
         
@@ -141,17 +101,6 @@ void PortManager::loadPortDefaults(){
 
         time_t currentTime = time(nullptr);
 
-        /*setPortValues(int indexPort, bool isActive, bool isSimulated, int readPinNum, int writePinNum, PIN_TYPE pinType, CIRCUIT_TYPE circuitType, String pinDescription, float curReading, float lastReading, time_t currentTime, String stateStr){
-        
-        8 X Digital Input Channels (0-24V)
-        8 X Digital Output Channels 24V power supply
-        3 X Analog Input (0-10V or 4-20mA input)
-        4 X Analog Output Channels (0-10V DC Max 20mA per channel)
-        12 X Digital Programmable channels
-        3 X Tenp Channels
-        2 X Encoder Channels ABZ
-        1 X RS-232/ RA-422/Rs-485
-        */ 
         //Array value is the port number
         //start of analog pins
         setPortValues(0,true,false,0,-1,ANALOG_INPUT,ONOFF,"PIN AI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -196,45 +145,15 @@ void PortManager::loadPortDefaults(){
          setPortValues(32,false,false,IO_WRITE_CH_PIN_09,IO_READ_CH_PIN_09,PROGRAMMABLE_IO,ONOFF,"PIO_09", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(33,false,false,IO_WRITE_CH_PIN_10,IO_READ_CH_PIN_10,PROGRAMMABLE_IO,ONOFF,"PIO_10", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(34,false,false,IO_WRITE_CH_PIN_11,IO_READ_CH_PIN_11,PROGRAMMABLE_IO,ONOFF,"PIO_11", 0.00,0.00, currentTime,"INIT DEFAULT");
-         //END programmable IO
-         //start of digital HMI pins
-         /*
-TXP (Transmit Positive)
-
-    TXP refers to the "Transmit Positive" line in a differential pair of signals. It is one half of a pair where the other is TXN (Transmit Negative).
-    In differential signaling, TXP carries the inverse signal of TXN. The purpose of using differential signals like TXP and TXN is to enhance the reliability and integrity of data transmission, especially over longer distances or in environments with high electromagnetic interference (EMI).
-
-TXN (Transmit Negative)
-
-    TXN refers to the "Transmit Negative" line. It complements the TXP by carrying an inverted version of the same signal sent on the TXP line.
-    The differential receiver at the other end of the line measures the voltage difference between TXP and TXN. This configuration helps to cancel out any noise that might be picked up along the transmission path, as the noise would typically affect both TXP and TXN equally and thus be subtracted out in the differential measurement.
-         */
+         
          setPortValues(35,true,false,1,1,HMI,PULSE,"HMI TXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(36,true,false,-1,-1,HMI,PULSE,"HMI TXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
-         
-         
-
-        /*
-        RXP (Receive Positive)
-
-        RXP is the positive line of a differential pair used in the reception of signals. It receives the direct signal transmitted by the TXP line of the sending device.
-
-        RXN (Receive Negative)
-
-        RXN is the negative line of the differential pair and receives the inverse of the signal transmitted by the TXN line of the sending device.
-        */
+        
         setPortValues(37,true,false,1,1,HMI,PULSE,"HMI RXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(38,true,false,-1,-1,HMI,PULSE,"HMI RXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
 
-        /*
-        Wiring: CAN bus typically involves a twisted pair cable for CANH and CANL to improve resistance against EMI.
-        Termination: To reduce reflections and ensure signal integrity, the CAN bus should be terminated at both ends of the main cable with 120-ohm resistors.
-        */
-
         setPortValues(39,true,false,1,1,HMI,PULSE,"Bus CANH", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(40,true,false,-1,-1,HMI,PULSE,"Bus CANL", 0.00,0.00, currentTime,"INIT DEFAULT");
-
-        //End of digital HMI pins 
 
         //start of temp probe pins
         setPortValues(41,true,false,0,0,PTEMP,CTEMP,"TMP TP-00", 0.00,0.00,currentTime,"INIT DEFAULT");
@@ -281,8 +200,7 @@ void PortManager::setPortValues(int indexPort, bool isActive, bool isSimulated, 
 }
 
 void PortManager::writeToFlash() {
-    // Serialization logic here
-    DEBUG("Writting to flash init...");
+   
 
     if(!isInitialized){
         throw std::runtime_error("****** NOT INITIALIZED ****** UNABLE to WRITE to flash");
@@ -315,7 +233,6 @@ void PortManager::writeToFlash() {
       blockDevice.deinit();
       throw std::runtime_error(errMsg.c_str());
     } else {
-      DEBUG("Signature and Settings write to flash COMPLETE.");
       blockDevice.deinit();
     }
 }
@@ -331,27 +248,17 @@ size_t PortManager::getDataSizeWithSignature() const {
 
 
 bool PortManager::loadFromFlash() {
-    // Simulate loading logic
-    // if loading fails:
-    DEBUG("LOAD FROM FLASH...");
-  
-
-    //GET FLASH LIMITS HERE
+    
     //FlashIAPLimits limits = getFlashIAPLimits();  // Get the current flash memory limits
     auto [flashSize, startAddress, iapSize] = getFlashIAPLimits();
 
     String flashStringData = "Flash Size: " + String(flashSize) + "\nFlash Available: " + String(iapSize) + "\nStart Address: " + String(startAddress);
-    DEBUG(flashStringData);
 
     if (iapSize == 0) {
         throw std::runtime_error("****** FLASH ERROR ****** No memory available."); // If no available memory, 
         //throw load error indicating load failure of flash at boot
     }
-
     FlashIAPBlockDevice blockDevice(startAddress, iapSize);
-
-    DEBUG("Init FLASH...");
-
     int result = blockDevice.init();
     if (result != 0) {
         throw std::runtime_error("***** FLASH ERROR ****** unable to read from block device"); // If no available memory, 
@@ -359,7 +266,6 @@ bool PortManager::loadFromFlash() {
     size_t m_MemSizeRequired = getDataSizeWithSignature();
     char buffer[m_MemSizeRequired] = {0};
     
-    DEBUG("READING FLASH...");
     result = blockDevice.read(buffer, 0,m_MemSizeRequired);
     
     if (result != 0) {
@@ -367,19 +273,12 @@ bool PortManager::loadFromFlash() {
         throw std::runtime_error("***** FLASH ERROR ****** unable to read from block device"); 
     }
 
-    //made it this far so need to check the signature
-    DEBUG("Checking Signature");
     if(memcmp(buffer, DATA_SIGNATURE, sizeof(DATA_SIGNATURE)) != 0){
       //DID NOT FIND DATA_SIGNATURE
-      DEBUG("DID NOT FIND DATA_SIGNATURE");
+      LOG("DID NOT FIND DATA_SIGNATURE");
       return false;
     }
-
-    //read the adminSettings from flash 
-    // Copy the read settings to the settings variable
     memcpy(&settings, buffer + sizeof(DATA_SIGNATURE), sizeof(AdminSettings));
-
-    DEBUG("READING FLASH - COMPLETE");
     return true;  // Signature does not match or data corrupted
 }
 
@@ -389,9 +288,6 @@ size_t PortManager::getDataSizeWithSignature() {
     if (totalDataSize % programSize != 0) {
         totalDataSize += programSize - (totalDataSize % programSize);
     }
-
-    DEBUG("Reading from flash calculated.\ntotalDataSize: " + String(totalDataSize));
-    DEBUG("programSize: " + String(programSize));
     return totalDataSize;
 }
 
@@ -485,7 +381,7 @@ String PortManager::toHTML() {
        << "<p><strong>Last Reboot:</strong> " << ctime(&settings.DATE_LAST_REBOOT) << "</p>";
     return String(ss.str().c_str());
 }
-//ANALOG_INPUT, ANALOG_OUTPUT, DIGITAL_INPUT, DIGITAL_OUTPUT, PROGRAMMABLE_IO, PTEMP, HMI, ENCODER, PIN_TYPE_COUNT
+
 String PortManager::pinTypeToString(PIN_TYPE type){
   switch (type) {
         case ANALOG_INPUT: return "ANALOG INPUT";
@@ -500,7 +396,6 @@ String PortManager::pinTypeToString(PIN_TYPE type){
     }
 }
 
-//NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, CIRCUIT_TYPE_COUNT
 String PortManager::circuitTypeToString(CIRCUIT_TYPE type){
   switch (type) {
         case NOT_ASSIGNED: return "ON OFF 0-24V";

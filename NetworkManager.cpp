@@ -47,8 +47,6 @@ bool NetworkManager::initializeEthernet() {
     }
     isEthernetConnected = true;
     LOG("Connected via Ethernet, IP: " + Ethernet.localIP().toString());
-    //LOG();
-  
     return true;
 }
 
@@ -95,45 +93,3 @@ bool NetworkManager::checkNetworkConnection() {
     return initializeNetwork();
 }
 
-bool NetworkManager::testSSLConnection(const char* host) {
-    LOG("SSL CONNECTION TEST");
-
-    if (isEthernetConnected) {
-        LOG("Attempting SSL connection via Ethernet...");
-        
-        // Attempt to connect via SSL
-        if (ethClient.connectSSL(host, 443)) {
-            LOG("SSL connection successful via Ethernet.");
-            ethClient.stop();
-            return true;
-        } else {
-            LOG("SSL connection failed via Ethernet.");
-            // Add detailed logging here
-            int error = ethClient.getLastError();
-            LOG("Ethernet SSL Error Code: " + String(error));
-        }
-    } else {
-        LOG("Ethernet is not connected.");
-    }
-
-    if (isWiFiConnected) {
-        LOG("Attempting SSL connection via WiFi...");
-
-        // Attempt to connect via SSL
-        if (wifiClient.connectSSL(host, 443)) {
-            LOG("SSL connection successful via WiFi.");
-            wifiClient.stop();
-            return true;
-        } else {
-            LOG("SSL connection failed via WiFi.");
-            // Add detailed logging here
-            int error = wifiClient.getLastError();
-            LOG("WiFi SSL Error Code: " + String(error));
-        }
-    } else {
-        LOG("WiFi is not connected.");
-    }
-
-    LOG("No network connection available for SSL test.");
-    return false;
-}

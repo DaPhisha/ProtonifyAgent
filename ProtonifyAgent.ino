@@ -61,9 +61,6 @@ void setup() {
         PortManager& portManager = PortManager::getInstance(); 
         portManager.init();
 
-        // Print out the port manager settings 
-        DEBUG(portManager.toString());
-
         // Initialize NetworkManager
         NetworkManager& networkManager = NetworkManager::getInstance();
         if (!networkManager.initializeNetwork()) {

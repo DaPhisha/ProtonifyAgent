@@ -48,13 +48,8 @@ private:
     static void handleLogin(EthernetClient& client, const String& request,int contentLength, const String &authToken); 
     static void handleLogOut(EthernetClient& client, const String& request,int contentLength, const String &authToken);
 
-    static void handleAdminUnregister(EthernetClient& client, const String& request, int contentLength, const String &authToken);
-    static void handleAdminRegister(EthernetClient& client, const String& request, int contentLength, const String &authToken);
-    
-    static void handleTestSSL(EthernetClient& client, const String& request, int contentLength, const String& authToken);
+    static void handleTestConnection(EthernetClient& client, const String& request, int contentLength, const String& authToken);
 
-    //send json payload to server
-    static bool sendJsonData(const String& url, const String& jsonData);
 
     //PORT HANDLERS
     static void handleGetAnalogINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken);
@@ -99,41 +94,14 @@ private:
     static void sendSuccessResponse(EthernetClient& client, const String& message);
     static void sendSuccessResponseData(EthernetClient& client, const String& message, const String& data);
     static void sendErrorResponse(EthernetClient& client, const String& message);
-    /*
-    void serveMainPage(EthernetClient& client, const String &message);
-    void serveLoginPage(EthernetClient& client, const String &message);
-    void serveAdminPage(EthernetClient& client, const String &message);
-    void serveLoggerPage(EthernetClient& client, const String &message);
-    void processLogin(EthernetClient& client, const String& username, const String& password);
-    void serve404Page(EthernetClient& client);
-    void serve400Page(EthernetClient& client, const String &message);
-    void serveMonitorPage(EthernetClient& client, const String &message);
-    void serveHelpPage(EthernetClient& client, const String &message);
-    void serveResetPage(EthernetClient& client);
-    
-    String urlDecode(const String &str);
-    String generateToken();
-    
-    CallHomeResponse sendJsonToRemoteServer(const String &jsonPayload, const String routeToCallHome);
-    String parseAndValidatePostData(const String &data); 
-    String createRegisterJsonPayload();
-    CallHomeResponse decodeJSONResponse(const String& jsonResponse);
-    void serveCard(EthernetClient& client, const String &cardClass,const String &cardTitle, const String &formAction, const String &buttonText, const String &content);
-    int getContentLength(String &request);
-    String getPostData(int contentLength, String &request);
-    String getParameterValue(const String &parameterName, const String &data); 
-    String generatePortOptions();
-    int findPinByReference(const String &reference); 
-    void printPinDetailsAtReference(int referenceNum);
-    void servePortCard(EthernetClient& client,const String &cardTitle, const String &content, const String &color); 
-    String getNextShadeOfGreen(int step, int iteration); 
-    String dropDownCircuitSelected(int refNum);
-    String createStatusJsonPayload();
-    String connectionURLTest(const String &testURL);
-    String formatMacAddress(byte mac[]); 
-    String extractValueFromPostData(String postData, String variableName);
-    byte convertHexStrToByte(String hexStr); 
-    */
+    static String sendJsonToServer(const String& host, const String& path, const String& payload);
+    static String getJSONValue(const String& json, const String& key);
+
+    static void handleRegister(EthernetClient& client, const String& request, int contentLength, const String& authToken);
+    static void handleUnregister(EthernetClient& client, const String& request, int contentLength, const String& authToken);
+
+    static String generateUnregistrationPayload();
+    static String generateRegistrationPayload();
 
 public:
     AdminServerManager();

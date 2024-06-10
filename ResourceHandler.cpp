@@ -409,7 +409,7 @@ body {
 .admin-card-content input[type='text'],
 .admin-card-content input[type='password'],
 .admin-card-content input[type='number'] {
-    width: 100%;
+    width: 80%;
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 5px;
@@ -823,17 +823,65 @@ const char* ResourceHandler::getJavascript() {
         `;
     }
 
+    const registerForm = document.getElementById('register-form');
+    const statusMessage = document.getElementById('status-message');
+    const serverMessage = document.getElementById('server-message');
+    const registerButton = document.getElementById('register-button');
+    const registerCard = document.querySelector('.register-card');
+
+    if (registerForm) {
+        registerForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            console.log('Registration form submitted');
+
+            const formData = new FormData(registerForm);
+            const params = new URLSearchParams();
+            formData.forEach((value, key) => {
+                params.append(key, value);
+            });
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', registerForm.action, true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                console.log('XHR onload triggered with status:', xhr.status);
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        console.log('Response received:', response);
+                        serverMessage.textContent = response.message;
+                        window.location.reload();
+                    } catch (e) {
+                        console.error('Error parsing JSON response:', e);
+                        serverMessage.textContent = 'Error parsing response';
+                        serverMessage.style.color = 'red';
+                    }
+                } else {
+                    console.log('XHR request failed with status:', xhr.status);
+                    serverMessage.textContent = 'Request failed';
+                    serverMessage.style.color = 'red';
+                }
+            };
+            xhr.onerror = function() {
+                console.error('XHR onerror triggered');
+                serverMessage.textContent = 'Request failed';
+                serverMessage.style.color = 'red';
+            };
+            xhr.send(params.toString());
+        });
+    }
+    
     const testSSLButton = document.getElementById('test-ssl-button');
     const sslStatusMessage = document.getElementById('ssl-status-message');
     
     if (testSSLButton) {
         testSSLButton.addEventListener('click', function() {
-            console.log('Test SSL');
+            console.log('Test Secure Connection');
             sslStatusMessage.textContent = 'Testing SSL connection...';
             sslStatusMessage.style.color = 'blue';
 
             const xhr = new XMLHttpRequest();
-            xhr.open('GET', '/admin/testssl', true);
+            xhr.open('GET', '/admin/test', true);
             xhr.onload = function() {
                 try {
                     const response = JSON.parse(xhr.responseText);
@@ -952,11 +1000,12 @@ const char* ResourceHandler::getRegisterCard(bool isRegistered) {
     String card = R"(
         <div class='register-card' style='background-color: {{CARD_COLOR}};'>
             <div class='admin-card-header'>Registration Status</div>
-            <div class='admin-card-content'>
-                <p>{{STATUS_MESSAGE}}</p>
-                <form action='/admin/{{ACTION}}' method='POST'>
-                    <button type='submit'>{{BUTTON_TEXT}}</button>
+            <div class='admin-card-content center'>
+                <p id='status-message'>{{STATUS_MESSAGE}}</p>
+                <form id='register-form' action='/admin/{{ACTION}}' method='POST'>
+                    <button type='submit' id='register-button'>{{BUTTON_TEXT}}</button>
                 </form>
+                <p class='centered-message' id='server-message'></p>
             </div>
         </div>
     )";
@@ -974,6 +1023,7 @@ const char* ResourceHandler::getRegisterCard(bool isRegistered) {
     }
     return card.c_str();
 }
+
 
 const char* ResourceHandler::getMessageDiv(String message){
     String html = "<br><p class='centered-message' id='error-message'>" + message + "</p><br>";

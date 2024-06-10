@@ -25,27 +25,13 @@ public:
     // Deleted copy constructor and assignment operator for singleton enforcement
     NetworkManager(const NetworkManager&) = delete;
     NetworkManager& operator=(const NetworkManager&) = delete;
-
-    // Method to get the singleton instance of NetworkManager
     static NetworkManager& getInstance();
-
-    // Initialize network interfaces
     bool initializeNetwork();
-
-    // Initialize Ethernet connection
     bool initializeEthernet();
-
-    // Initialize WiFi connection
     bool initializeWiFi();
-
-    // Shutdown network interfaces
     void shutdownNetwork();
-
-    // Check if the network is still connected
     bool checkNetworkConnection();
 
-    // Test SSL connection
-    bool testSSLConnection(const char* host);
 };
 
 #endif // NETWORK_MANAGER_ 
