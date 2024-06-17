@@ -1,5 +1,3 @@
-
-
 /*
   File: AdminServerManager.cpp
   Date Created: May 11, 2024
@@ -9,14 +7,28 @@
   Version 2.0.0
 */
 #include "AdminServerManager.h"
-#include "ResourceHandler.h"
 #include <cstddef>
 #include <regex>
+//#include "api/IPAddress.h"
+
 EthernetServer server(HTTP_SERVER_PORT);
-bool m_serverStatusConnected = false;
+WiFiServer wifiServer(HTTP_SERVER_PORT);
+int m_handlersCount = 0;
+bool m_serverWifiConnected = false;
 static String m_activeToken = "";
 static unsigned long m_tokenGenerationTime = 0;
+IPAddress m_IPAddress;
+IPAddress m_DNS;
+IPAddress m_Gateway;
+IPAddress m_Subnet;
 
+struct RouteHandler {
+    String method;
+    String path;
+    void (*handler)(Client &client, const String &request, int contentLength, const String &authToken);
+};
+
+RouteHandler* handlers;
 
 AdminServerManager::AdminServerManager() {
   static RouteHandler localHandlers[] = {
@@ -30,6 +42,7 @@ AdminServerManager::AdminServerManager() {
         {"POST", "/home", handleHome},
         
         {"GET", "/console", handleConsole},
+        {"POST", "/console/clear", handleClearLog},
         {"POST", "/console/reset", handleReset},
         
         {"GET", "/admin", handleAdmin},
@@ -66,6 +79,7 @@ AdminServerManager::AdminServerManager() {
     handlers = localHandlers;
     m_handlersCount = sizeof(localHandlers) / sizeof(localHandlers[0]);
 }
+
 String AdminServerManager::generateRandomToken() {
     String token = "";
     for (int i = 0; i < 10; i++) { 
@@ -75,108 +89,181 @@ String AdminServerManager::generateRandomToken() {
     token += String(millis());
     return token;
 }
+
 void AdminServerManager::init() {
-  m_activeToken = generateRandomToken();
-  IPAddress m_IPAddress(PortManager::getInstance().settings.IP_ADDRESS[0],
-                        PortManager::getInstance().settings.IP_ADDRESS[1],
-                        PortManager::getInstance().settings.IP_ADDRESS[2],
-                        PortManager::getInstance().settings.IP_ADDRESS[3]);
-  
-  IPAddress m_DNS(PortManager::getInstance().settings.DNS[0],
-                  PortManager::getInstance().settings.DNS[1],
-                  PortManager::getInstance().settings.DNS[2],
-                  PortManager::getInstance().settings.DNS[3]);
-  
-  IPAddress m_Gateway(PortManager::getInstance().settings.GATEWAY[0],
-                  PortManager::getInstance().settings.GATEWAY[1],
-                  PortManager::getInstance().settings.GATEWAY[2],
-                  PortManager::getInstance().settings.GATEWAY[3]);
+    m_activeToken = generateRandomToken();
+    m_IPAddress = IPAddress(PortManager::getInstance().settings.IP_ADDRESS[0],
+                            PortManager::getInstance().settings.IP_ADDRESS[1],
+                            PortManager::getInstance().settings.IP_ADDRESS[2],
+                            PortManager::getInstance().settings.IP_ADDRESS[3]);
 
-  IPAddress m_Subnet(PortManager::getInstance().settings.SUBNET[0],
-                  PortManager::getInstance().settings.SUBNET[1],
-                  PortManager::getInstance().settings.SUBNET[2],
-                  PortManager::getInstance().settings.SUBNET[3]);
+    m_DNS = IPAddress(PortManager::getInstance().settings.DNS[0],
+                      PortManager::getInstance().settings.DNS[1],
+                      PortManager::getInstance().settings.DNS[2],
+                      PortManager::getInstance().settings.DNS[3]);
 
-  
-  int retValue = Ethernet.begin(
-  PortManager::getInstance().settings.MAC,
-  m_IPAddress,
-  m_DNS,
-  m_Gateway,
-  m_Subnet);
-  server.begin();
-}
-void AdminServerManager::handleClient() {
-    EthernetClient client = server.available();
-    if (client) {
+    m_Gateway = IPAddress(PortManager::getInstance().settings.GATEWAY[0],
+                          PortManager::getInstance().settings.GATEWAY[1],
+                          PortManager::getInstance().settings.GATEWAY[2],
+                          PortManager::getInstance().settings.GATEWAY[3]);
 
-        String currentLine = ""; // Stores the current line of the request
-        String method = "";      // Stores the HTTP method (GET, POST, etc.)
-        String url = "";         // Stores the URL requested
-        bool isHeaderComplete = false; // Flag to check if the HTTP header has been fully received
-        String requestBody = ""; // Stores the body of a POST request
-        String authToken = "";   // Stores the value of the authToken cookie
-        int contentLength = 0;   // Stores the length of the POST request body
+    m_Subnet = IPAddress(PortManager::getInstance().settings.SUBNET[0],
+                         PortManager::getInstance().settings.SUBNET[1],
+                         PortManager::getInstance().settings.SUBNET[2],
+                         PortManager::getInstance().settings.SUBNET[3]);
 
-        while (client.connected()) {
-            if (client.available()) {
-                char c = client.read(); 
-                if (c == '\n') { 
-                    if (currentLine.length() == 0) {
-                        isHeaderComplete = true; 
-                        if (method == "POST" && contentLength > 0) {
-                            while (requestBody.length() < contentLength) {
-                                if (client.available()) {
-                                    char c = client.read();
-                                    requestBody += c;
-                                }
-                            }
-                        }
+    //LOG("Default IP Address: " + m_IPAddress.toString());
+    //LOG("Default DNS Address: " + m_DNS.toString());
 
-                        for (int i = 0; i < m_handlersCount; i++) {
-                            if (method == handlers[i].method && url == handlers[i].path) {
-                                
-                                handlers[i].handler(client, requestBody, contentLength, authToken);
-                                break;
-                            }
-                        }
-                        break;
-                    } else {
-                        
-                        if (method == "" && url == "") {
-                            int firstSpace = currentLine.indexOf(' ');
-                            int secondSpace = currentLine.lastIndexOf(' ');
-                            if (firstSpace != -1 && secondSpace != -1 && firstSpace != secondSpace) {
-                                method = currentLine.substring(0, firstSpace);
-                                url = currentLine.substring(firstSpace + 1, secondSpace);
-                            }
-                        }
 
-                        if (currentLine.startsWith("Content-Length: ")) {
-                            contentLength = currentLine.substring(16).toInt();
-                        }
+    
+     /* Change Ip configuration settings disabling the dhcp client
+        *
+        * param local_ip: 	Static ip configuration
+		* param dns_server:     IP configuration for DNS server 1
+        * param gateway: 	Static gateway configuration
+        * param subnet:		Static Subnet mask
+        */
+    //WiFi.config(m_IPAddress.toString().c_str(), m_DNS, m_Gateway, m_Subnet); // Apply static IP configuration
+    WiFi.begin(PortManager::getInstance().settings.WIFI_SSID, PortManager::getInstance().settings.WIFI_PASSWORD);
+    
+    unsigned long startAttemptTime = millis();
 
-                        if (currentLine.startsWith("Cookie: ")) {
-                            int authTokenIndex = currentLine.indexOf("authToken=");
-                            if (authTokenIndex != -1) {
-                                int authTokenEnd = currentLine.indexOf(';', authTokenIndex);
-                                if (authTokenEnd == -1) {
-                                    authTokenEnd = currentLine.length();
-                                }
-                                authToken = currentLine.substring(authTokenIndex + 10, authTokenEnd);
-                            }
-                        }
+    // Wait for connection attempt to complete
+    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
+        delay(100);
+    }
 
-                        currentLine = ""; // Reset currentLine for the next line
-                    }
-                } else if (c != '\r') {
-                    currentLine += c; // Add character to currentLine if it's not a carriage return
-                }
-            }
-        }
-        client.stop(); // Close the client connection
+    if (WiFi.status() == WL_CONNECTED) {
+        m_serverWifiConnected = true;
+        wifiServer.begin();
+        LOG("WiFi server started. IP address: " + WiFi.localIP().toString());
+    } else {
+        m_serverWifiConnected = false;
+        LOG("WiFi connection failed. Trying Ethernet.");
+        Ethernet.begin(PortManager::getInstance().settings.MAC, m_IPAddress, m_DNS, m_Gateway, m_Subnet);
+        server.begin();
+        LOG("Ethernet server started. IP address: " + Ethernet.localIP().toString());
     }
 }
+
+bool AdminServerManager::checkWiFiReconnection() {
+  if (WiFi.status() == WL_CONNECTED) {
+    return true;
+  }
+  return false;
+}
+
+bool AdminServerManager::attemptWiFiReconnection() {
+    WiFi.disconnect();
+    //WiFi.encryptionType()
+    //WiFi.config(m_IPAddress.toString().c_str(), m_DNS, m_Gateway, m_Subnet); // Apply static IP configuration
+    //WiFi.mode(WIFI_STA);
+    WiFi.begin(PortManager::getInstance().settings.WIFI_SSID, PortManager::getInstance().settings.WIFI_PASSWORD);
+    
+
+    unsigned long reconnectAttemptTime = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - reconnectAttemptTime < 10000) {
+        delay(100);
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+        LOG("WiFi reconnected successfully.");
+        
+        LOG("WiFi server started. IP address: " + WiFi.localIP().toString());
+        wifiServer.begin();
+        m_serverWifiConnected = true;
+        return true;
+    } else {
+        m_serverWifiConnected = false;
+        LOG("WiFi reconnection failed.");
+        return false;
+    }
+}
+
+
+void AdminServerManager::handleClient() {
+
+    // Handle client connections
+    if (m_serverWifiConnected) {
+        WiFiClient client = wifiServer.available();
+        if (client) {
+            handleClientConnection(client);
+        }
+    } else {
+        EthernetClient client = server.available();
+        if (client) {
+            handleClientConnection(client);
+        }
+    }
+}
+
+void AdminServerManager::handleClientConnection(Client& client) {
+    String currentLine = ""; // Stores the current line of the request
+    String method = "";      // Stores the HTTP method (GET, POST, etc.)
+    String url = "";         // Stores the URL requested
+    bool isHeaderComplete = false; // Flag to check if the HTTP header has been fully received
+    String requestBody = ""; // Stores the body of a POST request
+    String authToken = "";   // Stores the value of the authToken cookie
+    int contentLength = 0;   // Stores the length of the POST request body
+
+    while (client.connected()) {
+        if (client.available()) {
+            char c = client.read(); 
+            if (c == '\n') { 
+                if (currentLine.length() == 0) {
+                    isHeaderComplete = true; 
+                    if (method == "POST" && contentLength > 0) {
+                        while (requestBody.length() < contentLength) {
+                            if (client.available()) {
+                                char c = client.read();
+                                requestBody += c;
+                            }
+                        }
+                    }
+
+                    for (int i = 0; i < m_handlersCount; i++) {
+                        if (method == handlers[i].method && url == handlers[i].path) {
+                            handlers[i].handler(client, requestBody, contentLength, authToken);
+                            break;
+                        }
+                    }
+                    break;
+                } else {
+                    if (method == "" && url == "") {
+                        int firstSpace = currentLine.indexOf(' ');
+                        int secondSpace = currentLine.lastIndexOf(' ');
+                        if (firstSpace != -1 && secondSpace != -1 && firstSpace != secondSpace) {
+                            method = currentLine.substring(0, firstSpace);
+                            url = currentLine.substring(firstSpace + 1, secondSpace);
+                        }
+                    }
+
+                    if (currentLine.startsWith("Content-Length: ")) {
+                        contentLength = currentLine.substring(16).toInt();
+                    }
+
+                    if (currentLine.startsWith("Cookie: ")) {
+                        int authTokenIndex = currentLine.indexOf("authToken=");
+                        if (authTokenIndex != -1) {
+                            int authTokenEnd = currentLine.indexOf(';', authTokenIndex);
+                            if (authTokenEnd == -1) {
+                                authTokenEnd = currentLine.length();
+                            }
+                            authToken = currentLine.substring(authTokenIndex + 10, authTokenEnd);
+                        }
+                    }
+
+                    currentLine = ""; // Reset currentLine for the next line
+                }
+            } else if (c != '\r') {
+                currentLine += c; // Add character to currentLine if it's not a carriage return
+            }
+        }
+    }
+    client.stop(); // Close the client connection
+}
+
 
 String AdminServerManager::getUptimeString() {
   unsigned long totalSeconds = millis() / 1000;
@@ -191,16 +278,16 @@ String AdminServerManager::getUptimeString() {
   return uptime;
 }
 
-void AdminServerManager::handleHome(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleHome(Client& client, const String& request,int contentLength, const String &authToken) {
 
   if(authToken == m_activeToken){
-    handleHomeLandingPage(client, request,"Authentication Token found.");
+    handleHomeLandingPage(client, request,"Protonify Agent Console");
   }else{
     handleError(client, 401, "User not authorized! Please re-login.");
   }
 }
 
-void AdminServerManager::handleRoot(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleRoot(Client& client, const String& request,int contentLength, const String &authToken) {
     String message = "Welcome to the Protonify Agent Management System!" + AdminServerManager::getUptimeString();
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: text/html");
@@ -226,7 +313,7 @@ void AdminServerManager::handleRoot(EthernetClient& client, const String& reques
 
 
 
-void AdminServerManager::handleLogOut(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleLogOut(Client& client, const String& request,int contentLength, const String &authToken) {
       m_activeToken = generateRandomToken();
       handleRoot(client, request, 0,"");
 }
@@ -275,7 +362,7 @@ bool AdminServerManager::isValidURL(const String& url) {
     return false;
 }
 
-void AdminServerManager::processAdmin(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::processAdmin(Client& client, const String& request, int contentLength, const String &authToken) {
 
     if(authToken != m_activeToken){
          handleError(client, 404, "Un-Authorized Settings Change Request to /admin");
@@ -302,6 +389,8 @@ void AdminServerManager::processAdmin(EthernetClient& client, const String& requ
     String gateway = extractValueFromPostData(request, "GATEWAY");
     String dns = extractValueFromPostData(request, "DNS");
     String subnet = extractValueFromPostData(request, "SUBNET");
+    
+    
     String macAddress = extractValueFromPostData(request, "MAC");
     if (!isValidIP(ipAddress) || !isValidIP(gateway) || !isValidIP(dns) || !isValidIP(subnet)) {
         isValid = false;
@@ -312,7 +401,8 @@ void AdminServerManager::processAdmin(EthernetClient& client, const String& requ
         isValid = false;
         errorMessage += "MAC address invalid.";
     }
-
+    String descriptionArduino = extractValueFromPostData(request, "DESCRIPTION");
+    
     // Extract and validate Device information
     String serialNumber = extractValueFromPostData(request, "SERIAL_NUMBER");
     String model = extractValueFromPostData(request, "MODEL");
@@ -320,9 +410,26 @@ void AdminServerManager::processAdmin(EthernetClient& client, const String& requ
     String sharedSecret = extractValueFromPostData(request, "SHARED_SECRET");
     String callHomeHost = extractValueFromPostData(request, "CALL_HOME_HOST");
 
-    if (serialNumber.length() > MAX_SERIAL || model.length() > MAX_MODEL || sharedSecret.length() > MAX_SHARED_SECRET || !isValidIP(callHomeHost)) {
+    if (!isValidIP(callHomeHost)) {
         isValid = false;
-        errorMessage += "Call home Host IP invalid. ";
+        errorMessage += "Call home Host IP invalid format must be xxx.xxx.xxx.xxx where x is between 0 and 255.";
+    }
+    if(serialNumber.length() > MAX_SERIAL ){
+        isValid = false;
+        errorMessage += "Serial number exceeds max length " + String(MAX_SERIAL);
+    }
+    if(model.length() > MAX_MODEL ){
+        isValid = false;
+        errorMessage += "Model string exceeds max length "  + String(MAX_MODEL);
+    }
+    if(sharedSecret.length() > MAX_SHARED_SECRET){
+        isValid = false;
+        errorMessage += "Shared Secret string exceeds max length " + String(MAX_SHARED_SECRET);
+    } 
+    if(descriptionArduino.length() > MAX_DESCRIPTION){
+      isValid = false;
+      errorMessage += "Description string exceeds max length " + String(MAX_DESCRIPTION);
+
     }
     uint32_t refreshRate = refreshRateStr.toInt();
     if (refreshRate == 0) {
@@ -342,9 +449,11 @@ void AdminServerManager::processAdmin(EthernetClient& client, const String& requ
         sscanf(dns.c_str(), "%hhu.%hhu.%hhu.%hhu", &PortManager::getInstance().settings.DNS[0], &PortManager::getInstance().settings.DNS[1], &PortManager::getInstance().settings.DNS[2], &PortManager::getInstance().settings.DNS[3]);
         sscanf(subnet.c_str(), "%hhu.%hhu.%hhu.%hhu", &PortManager::getInstance().settings.SUBNET[0], &PortManager::getInstance().settings.SUBNET[1], &PortManager::getInstance().settings.SUBNET[2], &PortManager::getInstance().settings.SUBNET[3]);
         sscanf(macAddress.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &PortManager::getInstance().settings.MAC[0], &PortManager::getInstance().settings.MAC[1], &PortManager::getInstance().settings.MAC[2], &PortManager::getInstance().settings.MAC[3], &PortManager::getInstance().settings.MAC[4], &PortManager::getInstance().settings.MAC[5]);
+        
+        strncpy(PortManager::getInstance().settings.DESCRIPTION, urlDecode(descriptionArduino).c_str(), MAX_DESCRIPTION);
 
         strncpy(PortManager::getInstance().settings.SERIAL_NUMBER, serialNumber.c_str(), MAX_SERIAL);
-        strncpy(PortManager::getInstance().settings.MODEL, model.c_str(), MAX_MODEL);
+        strncpy(PortManager::getInstance().settings.MODEL, urlDecode(model).c_str(), MAX_MODEL);
         PortManager::getInstance().settings.REFRESH_RATE = refreshRate;
         strncpy(PortManager::getInstance().settings.SHARED_SECRET, sharedSecret.c_str(), MAX_SHARED_SECRET);
         strncpy(PortManager::getInstance().settings.CALL_HOME_HOST, urlDecode(callHomeHost).c_str(), MAX_CALL_HOME_HOST);
@@ -358,13 +467,11 @@ void AdminServerManager::processAdmin(EthernetClient& client, const String& requ
 }
 
 
-void AdminServerManager::handleLogin(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleLogin(Client& client, const String& request,int contentLength, const String &authToken) {
       if(authToken == m_activeToken){
           handleHomeLandingPage(client,request, "Resuming session with found Token.");
           return;
       }
-
-      DEBUG("REQUEST: " + request);
       String m_userMessage = "";
       String m_userName = extractValueFromPostData(request,"username");
       String m_password = extractValueFromPostData(request,"password");
@@ -431,7 +538,7 @@ String AdminServerManager::extractValueFromPostData(String postData, String vari
     return ""; 
 }
 
-void AdminServerManager::handleJS(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleJS(Client& client, const String& request,int contentLength, const String &authToken) {
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: application/javascript");
     client.println("Connection: close");
@@ -439,7 +546,7 @@ void AdminServerManager::handleJS(EthernetClient& client, const String& request,
     client.stop();
 }
 
-void AdminServerManager::handleCSS(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleCSS(Client& client, const String& request,int contentLength, const String &authToken) {
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: text/css");
     client.println("Connection: close");
@@ -447,7 +554,7 @@ void AdminServerManager::handleCSS(EthernetClient& client, const String& request
     client.stop();
 }
 
-void AdminServerManager::handleError(EthernetClient& client, int errorCode, String errorMessage) {
+void AdminServerManager::handleError(Client& client, int errorCode, String errorMessage) {
   client.println("HTTP/1.1 " + String(errorCode) + " " + errorMessage);
   client.println("Content-Type: text/html");
   client.println("Connection: close");
@@ -476,10 +583,9 @@ void AdminServerManager::handleError(EthernetClient& client, int errorCode, Stri
   client.stop();
 }
 
-void AdminServerManager::handleReset(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleReset(Client& client, const String& request,int contentLength, const String &authToken) {
   
   if(authToken != m_activeToken){
-         LOG("UN-AUTHORIZED ACCESS /console/reset");
          handleError(client, 404, "Un-Authorized Access Request to /console/reset");
          return;
   }
@@ -497,9 +603,19 @@ void AdminServerManager::handleReset(EthernetClient& client, const String& reque
 
 }
 
-void AdminServerManager::handleConsole(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleClearLog(Client& client, const String& request, int contentLength, const String &authToken) {
+    if (authToken != m_activeToken) {
+        handleError(client, 404, "Un-Authorized Access Request to /console/clear");
+        return;
+    }
+    // Clear the log
+    PortManager::getInstance().clearLog();
+    handleConsole(client, request, contentLength, authToken);
+}
+
+
+void AdminServerManager::handleConsole(Client& client, const String& request,int contentLength, const String &authToken) {
     if(authToken != m_activeToken){
-         LOG("UN-AUTHORIZED ACCESS /console");
          handleError(client, 404, "Un-Authorized Access Request to /console");
          return;
     }
@@ -518,6 +634,8 @@ void AdminServerManager::handleConsole(EthernetClient& client, const String& req
   
     String user_message = "Welcome to the console logger.";
     client.println("<br><p class='centered-message'>" + user_message + "</p><br>");
+    
+    client.print(ResourceHandler::getClearButton());
 
     client.println("<div style='height: 800px; overflow-y: scroll; border: 1px solid #ccc; padding: 5px;'>");
     for (int i = PortManager::getInstance().settings.currentLogIndex > 0 ? (PortManager::getInstance().settings.currentLogIndex - 1) : 0; i >= 0; i--) {
@@ -525,14 +643,14 @@ void AdminServerManager::handleConsole(EthernetClient& client, const String& req
       client.println("<br>");
     }
     client.println("</div>");
-    client.println("</main>");
+    client.println("<br><br><br><br><br><br style='min-height: 150px'></main>");
     client.print(ResourceHandler::getFooter());
     client.println("</body>");
     client.println("</html>");
      client.stop();
 }
 
-void AdminServerManager::handleAdmin(EthernetClient& client, const String& request, int contentLength, const String& authToken) {
+void AdminServerManager::handleAdmin(Client& client, const String& request, int contentLength, const String& authToken) {
     if (authToken != m_activeToken) {
         handleError(client, 404, "Un-Authorized Access Request to /admin");
         return;
@@ -545,7 +663,7 @@ void AdminServerManager::handleAdmin(EthernetClient& client, const String& reque
     client.println();
     client.println("<!DOCTYPE HTML>");
     client.println("<html lang='en'>");
-    client.print(ResourceHandler::getHeaderRefresh("Admin Settings"));
+    client.print(ResourceHandler::getHeader("Admin Settings"));
     client.println("<body>");
     client.print(ResourceHandler::getHeaderMenu());
     client.println("<main class='main-content'>");
@@ -597,6 +715,9 @@ void AdminServerManager::handleAdmin(EthernetClient& client, const String& reque
                 <div class='admin-card'>
                     <div class='admin-card-header'>Device Information</div>
                     <div class='admin-card-content'>
+                        <label for='DESCRIPTION'>Description</label>
+                        <input type='text' id='DESCRIPTION' name='DESCRIPTION' value='{{DESCRIPTION}}' required>
+
                         <label for='SERIAL_NUMBER'>Serial Number</label>
                         <input type='text' id='SERIAL_NUMBER' name='SERIAL_NUMBER' value='{{SERIAL_NUMBER}}' required>
                         <label for='MODEL'>Model</label>
@@ -617,18 +738,18 @@ void AdminServerManager::handleAdmin(EthernetClient& client, const String& reque
             </form>
             <div class="cards-wrapper">
                 <div class='admin-card'>
-                    <div class='admin-card-header'>Test Server Connection</div>
+                    <div class='admin-card-header'>Test Report Connection</div>
                     <div class='admin-card-content'>
-                        <button id='test-ssl-button' class='admin-submit-button'>Test Connection</button>
+                        <button id='test-ssl-button' class='admin-submit-button'>Send Report</button>
                         <p id='ssl-status-message' class='centered-message'></p>
                     </div>
                 </div>
                 
                 <!-- Reset Card -->
                 <form action='/console/reset' method='POST' class='reset-form'>
-                    <div class='admin-card'>
+                    <div class='admin-card center'>
                         <div class='admin-card-header'>Reset Options</div>
-                        <div class='admin-card-content'>
+                        <div class='admin-card-content center'>
                             <label for='resetType'>Select Reset Option:</label>
                             <select id='resetType' name='resetType' required>
                                 <option value='soft'>Soft Reset</option>
@@ -656,6 +777,7 @@ void AdminServerManager::handleAdmin(EthernetClient& client, const String& reque
     page.replace("{{DNS}}", PortManager::getInstance().ipToString(PortManager::getInstance().settings.DNS));
     page.replace("{{SUBNET}}", PortManager::getInstance().ipToString(PortManager::getInstance().settings.SUBNET));
     page.replace("{{MAC}}", PortManager::getInstance().macToString(PortManager::getInstance().settings.MAC));
+    page.replace("{{DESCRIPTION}}", String(PortManager::getInstance().settings.DESCRIPTION));
     page.replace("{{SERIAL_NUMBER}}", String(PortManager::getInstance().settings.SERIAL_NUMBER));
     page.replace("{{MODEL}}", String(PortManager::getInstance().settings.MODEL));
     page.replace("{{REFRESH_RATE}}", String(PortManager::getInstance().settings.REFRESH_RATE));
@@ -676,7 +798,7 @@ void AdminServerManager::handleAdmin(EthernetClient& client, const String& reque
 }
 
 
-void AdminServerManager::handleHomeLandingPage(EthernetClient& client, const String& request, String user_message){
+void AdminServerManager::handleHomeLandingPage(Client& client, const String& request, String user_message){
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: text/html");
     client.println("Connection: close");
@@ -723,8 +845,8 @@ void AdminServerManager::handleHomeLandingPage(EthernetClient& client, const Str
 }
 
 //handles a port update POST processing
-void AdminServerManager::handlePortUpdate(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
-    LOG("PORT UPDATE REQUEST: " + request);
+void AdminServerManager::handlePortUpdate(Client& client, const String& request, int contentLength, const String &authToken) {
+    //LOG("PORT UPDATE REQUEST: " + request);
     // Check for authentication
     if(authToken != m_activeToken){
         LOG("UN-AUTHORIZED ACCESS /ports/update POST");
@@ -815,7 +937,7 @@ void AdminServerManager::handlePortUpdate(EthernetClient& client, const String& 
 }
 
 
-void AdminServerManager::sendSuccessResponse(EthernetClient& client, const String& message) {
+void AdminServerManager::sendSuccessResponse(Client& client, const String& message) {
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: application/json");
     client.println("Connection: close");
@@ -823,7 +945,7 @@ void AdminServerManager::sendSuccessResponse(EthernetClient& client, const Strin
     client.println("{\"status\":\"SUCCESS\",\"message\":\"" + message + "\"}");
     client.stop();
 }
-void AdminServerManager::sendSuccessResponseData(EthernetClient& client, const String& message, const String& data) {
+void AdminServerManager::sendSuccessResponseData(Client& client, const String& message, const String& data) {
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: application/json");
     client.println("Connection: close");
@@ -832,7 +954,7 @@ void AdminServerManager::sendSuccessResponseData(EthernetClient& client, const S
     client.stop();
 }
 
-void AdminServerManager::sendErrorResponse(EthernetClient& client, const String& message) {
+void AdminServerManager::sendErrorResponse(Client& client, const String& message) {
     client.println("HTTP/1.1 400 Bad Request");
     client.println("Content-Type: application/json");
     client.println("Connection: close");
@@ -842,7 +964,7 @@ void AdminServerManager::sendErrorResponse(EthernetClient& client, const String&
 }
 
 // Generic function to handle GET requests for port listings
-void AdminServerManager::handleGetPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken, PIN_TYPE pinType) {
+void AdminServerManager::handleGetPorts(Client& client, const String& request, int contentLength, const String &authToken, PIN_TYPE pinType) {
     if(authToken != m_activeToken){
         sendErrorResponse(client, "FAILURE: Un-Authorized Access Request");
         return;
@@ -891,7 +1013,7 @@ void AdminServerManager::handleGetPorts(EthernetClient& client, const String& re
 }
 
 // Generic function to generate the HTML landing page for port types
-void AdminServerManager::handlePortsPage(EthernetClient& client, const String& request, int contentLength, const String &authToken, const String& pageTitle) {
+void AdminServerManager::handlePortsPage(Client& client, const String& request, int contentLength, const String &authToken, const String& pageTitle) {
     if(authToken != m_activeToken){
         handleError(client, 404, "FAILURE: Un-Authorized Access Request");
         return;
@@ -905,9 +1027,10 @@ void AdminServerManager::handlePortsPage(EthernetClient& client, const String& r
     client.println();
     client.println("<!DOCTYPE HTML>");
     client.println("<html lang='en'>");
-    client.print(ResourceHandler::getHeaderRefresh(pageTitle));
+    client.print(ResourceHandler::getHeader(pageTitle));
     client.println("<body>");
     client.print(ResourceHandler::getHeaderMenu());
+    client.print(ResourceHandler::getRefreshIntervalDropdown());
     client.print(ResourceHandler::getPortMainContent());
     client.print(ResourceHandler::getFooter());
     client.println("</body>");
@@ -916,77 +1039,77 @@ void AdminServerManager::handlePortsPage(EthernetClient& client, const String& r
 }
 
 // Handle Digital IN Ports
-void AdminServerManager::handleDigitalINPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handleDigitalINPorts(Client& client, const String& request, int contentLength, const String &authToken) {
     handlePortsPage(client, request, contentLength, authToken, "Digital IN Port Manager");
 }
 
-void AdminServerManager::handleGetDigitalINPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handleGetDigitalINPorts(Client& client, const String& request, int contentLength, const String &authToken) {
     handleGetPorts(client, request, contentLength, authToken, DIGITAL_INPUT);
 }
 
 // Handle Digital OUT Ports
-void AdminServerManager::handleDigitalOUTPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handleDigitalOUTPorts(Client& client, const String& request, int contentLength, const String &authToken) {
     handlePortsPage(client, request, contentLength, authToken, "Digital OUT Port Manager");
 }
 
-void AdminServerManager::handleGetDigitalOUTPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handleGetDigitalOUTPorts(Client& client, const String& request, int contentLength, const String &authToken) {
     handleGetPorts(client, request, contentLength, authToken, DIGITAL_OUTPUT);
 }
 
 // Handle Programmable IO Ports
-void AdminServerManager::handleProgrammableIOPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handleProgrammableIOPorts(Client& client, const String& request, int contentLength, const String &authToken) {
     handlePortsPage(client, request, contentLength, authToken, "Programmable IO Port Manager");
 }
 
-void AdminServerManager::handleGetProgrammableIOPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handleGetProgrammableIOPorts(Client& client, const String& request, int contentLength, const String &authToken) {
     handleGetPorts(client, request, contentLength, authToken, PROGRAMMABLE_IO);
 }
 
 // Handle HMI Ports
-void AdminServerManager::handleHMIPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handleHMIPorts(Client& client, const String& request, int contentLength, const String &authToken) {
     handlePortsPage(client, request, contentLength, authToken, "HMI Port Manager");
 }
 
-void AdminServerManager::handleGetHMIPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handleGetHMIPorts(Client& client, const String& request, int contentLength, const String &authToken) {
     handleGetPorts(client, request, contentLength, authToken, HMI);
 }
 
 // Handle Temperature Ports
-void AdminServerManager::handlePTEMPPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handlePTEMPPorts(Client& client, const String& request, int contentLength, const String &authToken) {
     handlePortsPage(client, request, contentLength, authToken, "Temperature Port Manager");
 }
 
-void AdminServerManager::handleGetPTEMPPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handleGetPTEMPPorts(Client& client, const String& request, int contentLength, const String &authToken) {
     handleGetPorts(client, request, contentLength, authToken, PTEMP);
 }
 
 // Handle Encoder Ports
-void AdminServerManager::handleENCODERPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handleENCODERPorts(Client& client, const String& request, int contentLength, const String &authToken) {
     handlePortsPage(client, request, contentLength, authToken, "Encoder Port Manager");
 }
 
-void AdminServerManager::handleGetENCODERPorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handleGetENCODERPorts(Client& client, const String& request, int contentLength, const String &authToken) {
     handleGetPorts(client, request, contentLength, authToken, ENCODER);
 }
 
-void AdminServerManager::handleAnalogINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleAnalogINPorts(Client& client, const String& request,int contentLength, const String &authToken) {
     handlePortsPage(client, request, contentLength, authToken, "Analog IN Port Manager");
 }
 
-void AdminServerManager::handleGetAnalogINPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleGetAnalogINPorts(Client& client, const String& request,int contentLength, const String &authToken) {
     // Similar to handleGetAnalogPorts but for Analog IN
     handleGetPorts(client, request, contentLength, authToken, ANALOG_INPUT);
 }
 
-void AdminServerManager::handleAnalogOUTPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleAnalogOUTPorts(Client& client, const String& request,int contentLength, const String &authToken) {
     handlePortsPage(client, request, contentLength, authToken, "Analog OUT Port Manager");
 }
 
-void AdminServerManager::handleGetAnalogOUTPorts(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleGetAnalogOUTPorts(Client& client, const String& request,int contentLength, const String &authToken) {
     handleGetPorts(client, request, contentLength, authToken, ANALOG_OUTPUT);
 }
 
-void AdminServerManager::handleAllActivePorts(EthernetClient& client, const String& request,int contentLength, const String &authToken) {
+void AdminServerManager::handleAllActivePorts(Client& client, const String& request,int contentLength, const String &authToken) {
     if(authToken != m_activeToken){
         handleError(client, 404, "FAILURE: Un-Authorized Access Request to /ports/active");
         return;
@@ -1000,9 +1123,10 @@ void AdminServerManager::handleAllActivePorts(EthernetClient& client, const Stri
     client.println();
     client.println("<!DOCTYPE HTML>");
     client.println("<html lang='en'>");
-    client.print(ResourceHandler::getHeaderRefresh("All Active Port Manager"));
+    client.print(ResourceHandler::getHeader("All Active Port Manager"));
     client.println("<body>");
     client.print(ResourceHandler::getHeaderMenu());
+    client.print(ResourceHandler::getRefreshIntervalDropdown());
     client.print(ResourceHandler::getActivePortMainContent());
     client.print(ResourceHandler::getFooter());
     client.println("</body>");
@@ -1010,7 +1134,7 @@ void AdminServerManager::handleAllActivePorts(EthernetClient& client, const Stri
     client.stop();
 }
 
-void AdminServerManager::handleGetAllActivePorts(EthernetClient& client, const String& request, int contentLength, const String &authToken) {
+void AdminServerManager::handleGetAllActivePorts(Client& client, const String& request, int contentLength, const String &authToken) {
     if(authToken != m_activeToken){
         sendErrorResponse(client, "FAILURE: Un-Authorized Access Request");
         return;
@@ -1045,7 +1169,7 @@ void AdminServerManager::handleGetAllActivePorts(EthernetClient& client, const S
     response += "]}";
     sendSuccessResponseData(client, "SUCCESS: All active ports retrieved.", response);
 }
-void AdminServerManager::handleHelp(EthernetClient& client, const String& request,int contentLength, const String &authToken){
+void AdminServerManager::handleHelp(Client& client, const String& request,int contentLength, const String &authToken){
 if(authToken != m_activeToken){
         sendErrorResponse(client, "FAILURE: Un-Authorized Access Request.  Please login to view this file.");
         return;
@@ -1066,9 +1190,8 @@ if(authToken != m_activeToken){
   client.println("</html>");
   client.stop();
 }
-
+/*
 void AdminServerManager::handleTestConnection(EthernetClient& client, const String& request, int contentLength, const String& authToken) {
-    LOG("SERVER CONNECTION TEST");
     if (authToken != m_activeToken) {
         handleError(client, 404, "Un-Authorized Access Request to /admin/test");
         return;
@@ -1081,6 +1204,39 @@ void AdminServerManager::handleTestConnection(EthernetClient& client, const Stri
 
     String serverResponse = sendJsonToServer(host, path, payload);
     String message = getJSONValue(serverResponse, "message");
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: application/json");
+    client.println("Connection: close");
+    client.println();
+    client.print("{\"message\":\"");
+    client.print(message);
+    client.println("\"}");
+    client.stop();
+}
+*/
+
+void AdminServerManager::handleTestConnection(Client& client, const String& request, int contentLength, const String& authToken) {
+    if (authToken != m_activeToken) {
+        handleError(client, 404, "Un-Authorized Access Request to /admin/test");
+        return;
+    }
+
+    String host = String(PortManager::getInstance().settings.CALL_HOME_HOST);
+    String path = "/api/report";
+
+    String reportPayload = AdminServerManager::generateReportPayload();
+
+    LOG("PAYLOAD FOR REPORTING");
+    LOG(reportPayload);
+
+    String serverResponse = AdminServerManager::sendJsonToServer(host, path, reportPayload);
+
+    String message = getJSONValue(serverResponse, "message");
+    
+    if(message.length() <=0){
+      message = "ERROR UNKNOWN RESPONSE.";
+    }
+
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: application/json");
     client.println("Connection: close");
@@ -1143,7 +1299,7 @@ String AdminServerManager::sendJsonToServer(const String& host, const String& pa
     return response;
 }
 
-void AdminServerManager::handleRegister(EthernetClient& client, const String& request, int contentLength, const String& authToken) {
+void AdminServerManager::handleRegister(Client& client, const String& request, int contentLength, const String& authToken) {
     if (authToken != m_activeToken) {
         handleError(client, 404, "Un-Authorized Access Request to /admin/register");
         return;
@@ -1157,18 +1313,11 @@ void AdminServerManager::handleRegister(EthernetClient& client, const String& re
         PortManager::getInstance().settings.REGISTRATION_STATUS = true;
         PortManager::getInstance().writeToFlash();
     }
-
-    client.println("HTTP/1.1 200 OK");
-    client.println("Content-Type: application/json");
-    client.println("Connection: close");
-    client.println();
-    client.print("{\"message\":\"");
-    client.print(message);
-    client.println("\"}");
-    client.stop();
+    LOG("Register response: " + message);
+    handleAdmin(client,request, contentLength, authToken);
 }
 
-void AdminServerManager::handleUnregister(EthernetClient& client, const String& request, int contentLength, const String& authToken) {
+void AdminServerManager::handleUnregister(Client& client, const String& request, int contentLength, const String& authToken) {
     if (authToken != m_activeToken) {
         handleError(client, 404, "Un-Authorized Access Request to /admin/unregister");
         return;
@@ -1183,19 +1332,13 @@ void AdminServerManager::handleUnregister(EthernetClient& client, const String& 
         PortManager::getInstance().settings.REGISTRATION_STATUS = false;
         PortManager::getInstance().writeToFlash();
     }
-
-    client.println("HTTP/1.1 200 OK");
-    client.println("Content-Type: application/json");
-    client.println("Connection: close");
-    client.println();
-    client.print("{\"message\":\"");
-    client.print(message);
-    client.println("\"}");
-    client.stop();
+    LOG("Unregister response: " + message);
+    handleAdmin(client,request, contentLength, authToken);
 }
 
 String AdminServerManager::generateRegistrationPayload() {
     String payload = "{";
+    payload += "\"description\":\"" + String(PortManager::getInstance().settings.DESCRIPTION) + "\",";
     payload += "\"serialNumber\":\"" + String(PortManager::getInstance().settings.SERIAL_NUMBER) + "\",";
     payload += "\"sharedSecret\":\"" + String(PortManager::getInstance().settings.SHARED_SECRET) + "\",";
     payload += "\"model\":\"" + String(PortManager::getInstance().settings.MODEL) + "\",";
@@ -1216,3 +1359,42 @@ String AdminServerManager::generateUnregistrationPayload() {
     payload += "}";
     return payload;
 }
+
+
+String AdminServerManager::generateReportPayload() {
+    String payload = "{";
+    payload += "\"description\":\"" + String(PortManager::getInstance().settings.DESCRIPTION) + "\",";
+    payload += "\"serialNumber\":\"" + String(PortManager::getInstance().settings.SERIAL_NUMBER) + "\",";
+    payload += "\"sharedSecret\":\"" + String(PortManager::getInstance().settings.SHARED_SECRET) + "\",";
+    payload += "\"model\":\"" + String(PortManager::getInstance().settings.MODEL) + "\",";
+    payload += "\"ports\":[";
+
+    bool first = true;
+    for (int i = 0; i < MAX_PORTS; ++i) {
+        Ports& port = PortManager::getInstance().settings.ports[i];
+        if (port.isActive) {
+            if (!first) {
+                payload += ",";
+            }
+            payload += "{";
+            payload += "\"readPinNumber\":" + String(port.readPinNumber) + ",";
+            payload += "\"writePinNumber\":" + String(port.writePinNumber) + ",";
+            payload += "\"pinType\":\"" + String(PortManager::getInstance().pinTypeToString(port.pinType)) + "\",";
+            payload += "\"circuitType\":\"" + String(PortManager::getInstance().circuitTypeToString(port.circuitType)) + "\",";
+            payload += "\"pinDescription\":\"" + String(port.pinDescription) + "\",";
+            payload += "\"currentReading\":\"" + String(port.currentReading) + "\",";
+            payload += "\"lastReading\":\"" + String(PortManager::getInstance().timeToString(port.lastReading)) + "\",";
+            payload += "\"state\":\"" + String(port.state) + "\",";
+            payload += "\"isActive\":" + String(port.isActive) + ",";
+            payload += "\"isSimulated\":" + String(port.isSimulated) + ",";
+            payload += "\"lastUpdated\":\"" + String(PortManager::getInstance().timeToString(port.lastUpdated)) + "\"";
+            payload += "}";
+            first = false;
+        }
+    }
+
+    payload += "]";
+    payload += "}";
+    return payload;
+}
+

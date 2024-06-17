@@ -41,9 +41,9 @@ bool NetworkManager::initializeEthernet() {
       PortManager::getInstance().settings.MAC, PortManager::getInstance().settings.IP_ADDRESS, 
       PortManager::getInstance().settings.DNS, PortManager::getInstance().settings.GATEWAY,
       PortManager::getInstance().settings.SUBNET)) {
-      std::string err = "Ethernet initialization failed with static IP.";
-        LOG(err.c_str());
-        throw std::runtime_error(err);
+    LOG("Failed to connect to Ethernet");
+      isEthernetConnected = false;
+      return false;
     }
     isEthernetConnected = true;
     LOG("Connected via Ethernet, IP: " + Ethernet.localIP().toString());
@@ -55,6 +55,7 @@ bool NetworkManager::initializeWiFi() {
     for (int i = 0; i < 10; ++i) {
         if (WiFi.status() == WL_CONNECTED) {
             isWiFiConnected = true;
+            //WiFi.config(const char *localip, const char *netmask, const char *gateway)
             LOG("Connected via WiFi, IP: " + WiFi.localIP().toString());
             //String ipAddressWifi = WiFi.localIP().toString();
             //LOG();

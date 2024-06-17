@@ -22,7 +22,7 @@ void LogManager::init(bool setDebug) {
     unsigned long startTime = millis();
     while (!Serial && (millis() - startTime < 5000)) {
         // Wait for serial or 5 seconds timeout
-        writeLog("Initializing Serial Bus");
+        //writeLog("Initializing Serial Bus");
     }
     writeLog("LogManager: INIT COMPLETE");
 }

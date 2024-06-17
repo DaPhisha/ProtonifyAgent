@@ -27,7 +27,7 @@ constexpr int MAX_STATE_TXT = 32;
 //*******************************************************************
 //*******************************************************************
 //*******************************************************************
-const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH06072024";
+const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH06152024";
 
 enum CIRCUIT_TYPE {
     NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, CIRCUIT_TYPE_COUNT
@@ -63,6 +63,7 @@ struct AdminSettings {
         uint8_t DNS[4];//always four no end of line
         uint8_t SUBNET[4];//always four no end of line
         byte MAC[6];//always six no end of line
+        char DESCRIPTION[MAX_DESCRIPTION+1];
         char SERIAL_NUMBER[MAX_SERIAL+1]; //plus end of line
         char MODEL[MAX_MODEL+1];
         uint32_t REFRESH_RATE;
@@ -92,8 +93,6 @@ public:
     ~PortManager();
     void init(); 
     static PortManager& getInstance();
-    String toString();
-    String toHTML();
     bool loadFromFlash();
     void initializeDefaults();
     void writeToFlash();
@@ -107,6 +106,7 @@ public:
     bool stringToMAC(const String &macString, byte mac[6]);
     String macToString(const byte mac[6]);
     String timeToString(time_t t);
+    void clearLog();
 };
 
 #endif // PORT_MANAGER_H

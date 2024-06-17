@@ -17,7 +17,7 @@ PortManager::PortManager(){
 }
 void PortManager::init() {
     if (!loadFromFlash()) {
-        LOG("FAILED Writing to flash.  Initiating Defaults");
+        LOG("FAILED Reading settings from flash.  Initiating Defaults.");
         initializeDefaults();
     }else{
       isInitialized = true;
@@ -41,7 +41,7 @@ void PortManager::initializeDefaults() {
         //set default password
         strncpy(settings.Admin_PASSWORD, "password", sizeof(settings.Admin_PASSWORD));
         strncpy(settings.WIFI_SSID, "HAL2000", sizeof(settings.WIFI_SSID));
-        strncpy(settings.WIFI_PASSWORD, "password", sizeof(settings.WIFI_PASSWORD));
+        strncpy(settings.WIFI_PASSWORD, "quiettree081", sizeof(settings.WIFI_PASSWORD));
          //Default IP Address
          settings.IP_ADDRESS[0] = 192;
          settings.IP_ADDRESS[1] = 168;
@@ -72,9 +72,10 @@ void PortManager::initializeDefaults() {
          settings.MAC[4] = 0xFE;
          settings.MAC[5] = 0xED;
          
+         strncpy(settings.DESCRIPTION, "Portenta H7 DEV",sizeof(settings.DESCRIPTION));
          strncpy(settings.SERIAL_NUMBER, "002A00453130510B31353431", sizeof(settings.SERIAL_NUMBER));
          strncpy(settings.MODEL, "PORTENTA", sizeof(settings.MODEL));
-         settings.REFRESH_RATE = 3000;
+         settings.REFRESH_RATE = 300000;//every 5 mins
          strncpy(settings.SHARED_SECRET,  "12345678901234567890123456789012", sizeof(settings.SHARED_SECRET) - 1);
          settings.SHARED_SECRET[sizeof(settings.SHARED_SECRET) - 1] = '\0';
          strncpy(settings.CALL_HOME_HOST,"192.168.10.199",sizeof(settings.CALL_HOME_HOST));
@@ -96,6 +97,12 @@ void PortManager::initializeDefaults() {
         throw;  
     }
 }
+void PortManager::clearLog() {
+    memset(settings.logEntries, 0, sizeof(settings.logEntries));
+    settings.currentLogIndex = 0;
+    writeToFlash();
+}
+
 
 void PortManager::loadPortDefaults(){
 
@@ -103,7 +110,7 @@ void PortManager::loadPortDefaults(){
 
         //Array value is the port number
         //start of analog pins
-        setPortValues(0,true,false,0,-1,ANALOG_INPUT,ONOFF,"PIN AI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(0,true,true,0,-1,ANALOG_INPUT,ONOFF,"PIN AI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(1,false,false,1,-1,ANALOG_INPUT,MA420,"PIN AI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(2,false,false,2,-1,ANALOG_INPUT,CTEMP,"PIN AI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(3,true,false,-1,0,ANALOG_OUTPUT,CTEMP,"PIN AO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -112,7 +119,7 @@ void PortManager::loadPortDefaults(){
         setPortValues(6,false,false,-1,3,ANALOG_OUTPUT,PULSE,"PIN AO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         //start of digital input pins 0-7
-        setPortValues(7,true,false,DIN_READ_CH_PIN_00,-1,DIGITAL_INPUT,ONOFF,"DI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(7,true,true,DIN_READ_CH_PIN_00,-1,DIGITAL_INPUT,ONOFF,"DI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(8,false,false,DIN_READ_CH_PIN_01,-1,DIGITAL_INPUT,MA420,"DI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(9,false,false,DIN_READ_CH_PIN_02,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(10,false,false,DIN_READ_CH_PIN_03,-1,DIGITAL_INPUT,CTEMP,"DI_03", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -122,7 +129,7 @@ void PortManager::loadPortDefaults(){
         setPortValues(14,false,false,DIN_READ_CH_PIN_07,-1,DIGITAL_INPUT,PULSE,"DI_07", 0.00,0.00, currentTime,"INIT DEFAULT");
         //end of digital input pins
          //start of digital output pins 15-22
-         setPortValues(15,true,false,-1,0,DIGITAL_OUTPUT,ONOFF,"DO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(15,true,true,-1,0,DIGITAL_OUTPUT,ONOFF,"DO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(16,false,false,-1,1,DIGITAL_OUTPUT,ONOFF,"DO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(17,false,false,-1,2,DIGITAL_OUTPUT,ONOFF,"DO_02", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(18,false,false,-1,3,DIGITAL_OUTPUT,ONOFF,"DO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -133,7 +140,7 @@ void PortManager::loadPortDefaults(){
          //end of the digital output pins
 
          //start of 12 digital PROGRAMMABLE_IO pins
-         setPortValues(23,true,false,IO_WRITE_CH_PIN_00,IO_READ_CH_PIN_00,PROGRAMMABLE_IO,ONOFF,"PIO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(23,true,true,IO_WRITE_CH_PIN_00,IO_READ_CH_PIN_00,PROGRAMMABLE_IO,ONOFF,"PIO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(24,false,false,IO_WRITE_CH_PIN_01,IO_READ_CH_PIN_01,PROGRAMMABLE_IO,ONOFF,"PIO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(25,false,false,IO_WRITE_CH_PIN_02,IO_READ_CH_PIN_02,PROGRAMMABLE_IO,ONOFF,"PIO_02", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(26,false,false,IO_WRITE_CH_PIN_03,IO_READ_CH_PIN_03,PROGRAMMABLE_IO,ONOFF,"PIO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -146,21 +153,21 @@ void PortManager::loadPortDefaults(){
          setPortValues(33,false,false,IO_WRITE_CH_PIN_10,IO_READ_CH_PIN_10,PROGRAMMABLE_IO,ONOFF,"PIO_10", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(34,false,false,IO_WRITE_CH_PIN_11,IO_READ_CH_PIN_11,PROGRAMMABLE_IO,ONOFF,"PIO_11", 0.00,0.00, currentTime,"INIT DEFAULT");
          
-         setPortValues(35,true,false,1,1,HMI,PULSE,"HMI TXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(36,true,false,-1,-1,HMI,PULSE,"HMI TXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(35,true,true,1,1,HMI,PULSE,"HMI TXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(36,false,false,-1,-1,HMI,PULSE,"HMI TXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
         
-        setPortValues(37,true,false,1,1,HMI,PULSE,"HMI RXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(37,false,false,1,1,HMI,PULSE,"HMI RXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(38,true,false,-1,-1,HMI,PULSE,"HMI RXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
 
-        setPortValues(39,true,false,1,1,HMI,PULSE,"Bus CANH", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(40,true,false,-1,-1,HMI,PULSE,"Bus CANL", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(39,false,false,1,1,HMI,PULSE,"Bus CANH", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(40,false,false,-1,-1,HMI,PULSE,"Bus CANL", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         //start of temp probe pins
         setPortValues(41,true,false,0,0,PTEMP,CTEMP,"TMP TP-00", 0.00,0.00,currentTime,"INIT DEFAULT");
 
         
-        setPortValues(42,true,false,1,1,PTEMP,CTEMP,"TMP TN-00", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(43,true,false,2,2,PTEMP,CTEMP,"TMP RTD-00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(42,true,true,1,1,PTEMP,CTEMP,"TMP TN-00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(43,false,false,2,2,PTEMP,CTEMP,"TMP RTD-00", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         setPortValues(44,false,false,3,3,PTEMP,CTEMP,"TMP TP-01", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(45,false,false,4,4,PTEMP,CTEMP,"TMP TN-01", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -172,7 +179,7 @@ void PortManager::loadPortDefaults(){
         //end temp probes
         
         //start of encoders pins
-        setPortValues(50,true,false,0,0,ENCODER,PULSE,"ENCODER A0", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(50,true,true,0,0,ENCODER,PULSE,"ENCODER A0", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(51,false,false,1,1,ENCODER,PULSE,"ENCODER B0", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(52,false,false,2,2,ENCODER,PULSE,"ENCODER Z0", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(53,false,false,3,3,ENCODER,PULSE,"ENCODER A1", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -334,53 +341,7 @@ String PortManager::OnePortToString(int i) {
 }
 
 
-String PortManager::toString() {
 
-    if(!isInitialized){
-        throw std::runtime_error("****** NOT INITIALIZED ****** UNABLE to convert settings toString()");
-    }
-    std::stringstream ss;
-    ss << "Username: " << settings.Admin_USERNAME << "\n"
-       << "Password: " << settings.Admin_PASSWORD << "\n" // Consider masking this for security
-       << "IP Address: " << (int)settings.IP_ADDRESS[0] << "." << (int)settings.IP_ADDRESS[1] << "." << (int)settings.IP_ADDRESS[2] << "." << (int)settings.IP_ADDRESS[3] << "\n"
-       << "Gateway: " << (int)settings.GATEWAY[0] << "." << (int)settings.GATEWAY[1] << "." << (int)settings.GATEWAY[2] << "." << (int)settings.GATEWAY[3] << "\n"
-       << "DNS: " << (int)settings.DNS[0] << "." << (int)settings.DNS[1] << "." << (int)settings.DNS[2] << "." << (int)settings.DNS[3] << "\n"
-       << "Subnet: " << (int)settings.SUBNET[0] << "." << (int)settings.SUBNET[1] << "." << (int)settings.SUBNET[2] << "." << (int)settings.SUBNET[3] << "\n"
-       << "MAC: " << std::hex << std::setw(2) << std::setfill('0') << (int)settings.MAC[0] << ":" << (int)settings.MAC[1] << ":" << (int)settings.MAC[2] << ":" << (int)settings.MAC[3] << ":" << (int)settings.MAC[4] << ":" << (int)settings.MAC[5] << std::dec << "\n"
-       << "Serial Number: " << settings.SERIAL_NUMBER << "\n"
-       << "Model: " << settings.MODEL << "\n"
-       << "Refresh Rate: " << settings.REFRESH_RATE << "ms\n"
-       << "Shared Secret: " << settings.SHARED_SECRET << "\n" // Consider masking this for security
-       << "Host: " << settings.CALL_HOME_HOST << "\n"
-       << "Registration Status: " << (settings.REGISTRATION_STATUS ? "Registered" : "Not Registered") << "\n"
-       << "Last Updated: " << ctime(&settings.DATE_LAST_UPDATED)
-       << "Last Reboot: " << ctime(&settings.DATE_LAST_REBOOT);
-    return String(ss.str().c_str());
-}
-
-String PortManager::toHTML() {
-    if(!isInitialized){
-        throw std::runtime_error("****** NOT INITIALIZED ****** UNABLE to convert settings toHTML()");
-    }
-    std::stringstream ss;
-    ss << "<h1>Admin Settings</h1>"
-       << "<p><strong>Username:</strong> " << settings.Admin_USERNAME << "</p>"
-       << "<p><strong>Password:</strong> " << "********" << "</p>" // Password masked for security
-       << "<p><strong>IP Address:</strong> " << (int)settings.IP_ADDRESS[0] << "." << (int)settings.IP_ADDRESS[1] << "." << (int)settings.IP_ADDRESS[2] << "." << (int)settings.IP_ADDRESS[3] << "</p>"
-       << "<p><strong>Gateway:</strong> " << (int)settings.GATEWAY[0] << "." << (int)settings.GATEWAY[1] << "." << (int)settings.GATEWAY[2] << "." << (int)settings.GATEWAY[3] << "</p>"
-       << "<p><strong>DNS:</strong> " << (int)settings.DNS[0] << "." << (int)settings.DNS[1] << "." << (int)settings.DNS[2] << "." << (int)settings.DNS[3] << "</p>"
-       << "<p><strong>Subnet:</strong> " << (int)settings.SUBNET[0] << "." << (int)settings.SUBNET[1] << "." << (int)settings.SUBNET[2] << "." << (int)settings.SUBNET[3] << "</p>"
-       << "<p><strong>MAC:</strong> " << std::hex << std::setw(2) << std::setfill('0') << (int)settings.MAC[0] << ":" << (int)settings.MAC[1] << ":" << (int)settings.MAC[2] << ":" << (int)settings.MAC[3] << ":" << (int)settings.MAC[4] << ":" << (int)settings.MAC[5] << std::dec << "</p>"
-       << "<p><strong>Serial Number:</strong> " << settings.SERIAL_NUMBER << "</p>"
-       << "<p><strong>Model:</strong> " << settings.MODEL << "</p>"
-       << "<p><strong>Refresh Rate:</strong> " << settings.REFRESH_RATE << "ms</p>"
-       << "<p><strong>Shared Secret:</strong> " << "********" << "</p>" // Shared secret masked for security
-       << "<p><strong>Host:</strong> " << settings.CALL_HOME_HOST << "</p>"
-       << "<p><strong>Registration Status:</strong> " << (settings.REGISTRATION_STATUS ? "Registered" : "Not Registered") << "</p>"
-       << "<p><strong>Last Updated:</strong> " << ctime(&settings.DATE_LAST_UPDATED) << "</p>"
-       << "<p><strong>Last Reboot:</strong> " << ctime(&settings.DATE_LAST_REBOOT) << "</p>";
-    return String(ss.str().c_str());
-}
 
 String PortManager::pinTypeToString(PIN_TYPE type){
   switch (type) {

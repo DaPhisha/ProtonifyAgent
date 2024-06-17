@@ -17,18 +17,19 @@ class ResourceHandler {
 public:
     static const char* getCSS();
     static const char* getJavascript();
-    static const char*  getHeader(String title);
-    static const char*  getHeaderRefresh(String title);
+    static const char* getHeader(String title);
+    static const char* getHeaderRefresh(String title);
     static const char* getFooter();
     static const char* getLoginCard();
     static const char* getHeaderMenu();
-    static const char* getResetCard();
     static const char* getStatCard(String title, String statValue);
     static const char* getPortMainContent();
     static const char* getMessageDiv(String msg);
     static const char* getActivePortMainContent();
     static const char* getHelpContent(); 
     static const char* getRegisterCard(bool isRegistered);
+    static const char* getClearButton();
+    static const char* getRefreshIntervalDropdown();
 };
 
 #endif // RESOURCE_HANDLER_H

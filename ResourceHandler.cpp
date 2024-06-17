@@ -358,29 +358,7 @@ body {
     transition: box-shadow 0.3s ease, transform 0.3s ease;
     margin: 10px; /* Ensure there's spacing between cards */
 }
-/* Reset Card */
-.reset-card {
-    width: 250px; /* Adjust width as needed */
-    background-color: gray;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    display: inline-block;
-    /*flex-direction: column;*/
-    transition: box-shadow 0.3s ease, transform 0.3s ease;
-    margin-bottom: 50px; /* Ensure there's spacing at bottom of cards */
-}
-.register-card {
-    width: 250px; /* Adjust width as needed */
-    background-color: red;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    display: inline-block;
-    /*flex-direction: column;*/
-    transition: box-shadow 0.3s ease, transform 0.3s ease;
-    margin-bottom: 50px; /* Ensure there's spacing at bottom of cards */
-}
+
 .admin-card:hover {
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
     transform: translateY(-5px);
@@ -596,9 +574,7 @@ const char* ResourceHandler::getJavascript() {
     return R"(
     
     document.addEventListener('DOMContentLoaded', function() {
-    
     console.log(`javascript version: 1.2.0`);
-
     const versionElement = document.querySelector('.version');
     const version = versionElement ? versionElement.textContent.trim() : 'unknown';
     
@@ -675,55 +651,8 @@ const char* ResourceHandler::getJavascript() {
         });
     }
 
-    // Function to attach event listeners to port update forms
-    function attachPortFormListeners() {
-        const portForms = document.querySelectorAll('.port-card form');
-        portForms.forEach(form => {
-            form.addEventListener('submit', function(event) {
-                event.preventDefault();
-                console.log('Port Update Request.');
-
-                const formData = new FormData(form);
-                const params = new URLSearchParams();
-                formData.forEach((value, key) => {
-                    console.log(`Key: ${key}, Value: ${decodeURIComponent(value.replace(/\+/g, ' '))}`);
-                    params.append(key, decodeURIComponent(value.replace(/\+/g, ' ')));
-                });
-
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', form.action, true);
-                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                xhr.onload = function() {
-                    const errorMessage = document.getElementById('error-message');
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        console.log('Response received:', response);
-                        errorMessage.textContent = response.message;
-                        errorMessage.style.color = xhr.status === 200 ? 'green' : 'red';
-                        if (xhr.status === 200 && response.status === 'SUCCESS') {
-                            console.log('Port update successful');
-                            updatePortLists(response.message); // Refresh the port lists if the update was successful
-                        } else {
-                            console.log('Port update failed');
-                        }
-                    } catch (e) {
-                        console.error('Error parsing JSON response:', e);
-                        errorMessage.textContent = 'Error parsing response';
-                        errorMessage.style.color = 'red';
-                    }
-                };
-                xhr.onerror = function() {
-                    console.error('Request failed');
-                    const errorMessage = document.getElementById('error-message');
-                    errorMessage.textContent = 'Request failed';
-                    errorMessage.style.color = 'red';
-                };
-                xhr.send(params.toString());
-                console.log('Request sent with data:', params.toString());
-            });
-        });
-    }
-
+    // Check if the current path includes '/ports'
+if (window.location.pathname.startsWith('/ports')) {
     // Determine the port type from the URL path and update accordingly
     const portType = window.location.pathname.split('/')[2]; // Extract the port type from the URL
 
@@ -731,6 +660,8 @@ const char* ResourceHandler::getJavascript() {
     if (portType) {
         updatePortLists(`Manage your ${portType} ports below.`);
     }
+
+    let updateInterval = null; // Variable to store the interval ID
 
     function updatePortLists(message) {
         const xhr = new XMLHttpRequest();
@@ -823,53 +754,68 @@ const char* ResourceHandler::getJavascript() {
         `;
     }
 
-    const registerForm = document.getElementById('register-form');
-    const statusMessage = document.getElementById('status-message');
-    const serverMessage = document.getElementById('server-message');
-    const registerButton = document.getElementById('register-button');
-    const registerCard = document.querySelector('.register-card');
+    function attachPortFormListeners() {
+        const portForms = document.querySelectorAll('.port-card form');
+        portForms.forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                console.log('Port Update Request.');
 
-    if (registerForm) {
-        registerForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            console.log('Registration form submitted');
+                const formData = new FormData(form);
+                const params = new URLSearchParams();
+                formData.forEach((value, key) => {
+                    console.log(`Key: ${key}, Value: ${decodeURIComponent(value.replace(/\+/g, ' '))}`);
+                    params.append(key, decodeURIComponent(value.replace(/\+/g, ' ')));
+                });
 
-            const formData = new FormData(registerForm);
-            const params = new URLSearchParams();
-            formData.forEach((value, key) => {
-                params.append(key, value);
-            });
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', registerForm.action, true);
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-            xhr.onload = function() {
-                console.log('XHR onload triggered with status:', xhr.status);
-                if (xhr.status === 200) {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', form.action, true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    const errorMessage = document.getElementById('error-message');
                     try {
                         const response = JSON.parse(xhr.responseText);
                         console.log('Response received:', response);
-                        serverMessage.textContent = response.message;
-                        window.location.reload();
+                        errorMessage.textContent = response.message;
+                        errorMessage.style.color = xhr.status === 200 ? 'green' : 'red';
+                        if (xhr.status === 200 && response.status === 'SUCCESS') {
+                            console.log('Port update successful');
+                            updatePortLists(response.message); // Refresh the port lists if the update was successful
+                        } else {
+                            console.log('Port update failed');
+                        }
                     } catch (e) {
                         console.error('Error parsing JSON response:', e);
-                        serverMessage.textContent = 'Error parsing response';
-                        serverMessage.style.color = 'red';
+                        errorMessage.textContent = 'Error parsing response';
+                        errorMessage.style.color = 'red';
                     }
-                } else {
-                    console.log('XHR request failed with status:', xhr.status);
-                    serverMessage.textContent = 'Request failed';
-                    serverMessage.style.color = 'red';
-                }
-            };
-            xhr.onerror = function() {
-                console.error('XHR onerror triggered');
-                serverMessage.textContent = 'Request failed';
-                serverMessage.style.color = 'red';
-            };
-            xhr.send(params.toString());
+                };
+                xhr.onerror = function() {
+                    console.error('Request failed');
+                    const errorMessage = document.getElementById('error-message');
+                    errorMessage.textContent = 'Request failed';
+                    errorMessage.style.color = 'red';
+                };
+                xhr.send(params.toString());
+                console.log('Request sent with data:', params.toString());
+            });
         });
     }
+
+    // Update interval dropdown handler
+    const refreshIntervalDropdown = document.getElementById('refresh-interval');
+    if (refreshIntervalDropdown) {
+        refreshIntervalDropdown.addEventListener('change', function() {
+            const selectedInterval = parseInt(this.value, 10);
+            clearInterval(updateInterval); // Clear any existing interval
+            if (selectedInterval > 0) {
+                updateInterval = setInterval(() => {
+                    updatePortLists(`Manage your ${portType} ports below.`);
+                }, selectedInterval * 1000);
+            }
+        });
+    }
+}
     
     const testSSLButton = document.getElementById('test-ssl-button');
     const sslStatusMessage = document.getElementById('ssl-status-message');
@@ -908,15 +854,13 @@ const char* ResourceHandler::getJavascript() {
 }
 
 const char*  ResourceHandler::getHeader(String title) {
-String content = "<head>";
-content+="<meta charset='UTF-8'>";
-content+="<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
-content+="<title>" + title + "</title>";
-content+="<link rel='stylesheet' href='/css/style.css'>";
-content+="</head>";
-LOG("HERE");
-LOG(content);
-return content.c_str();
+  String content = "<head>";
+    content += "<meta charset='UTF-8'>";
+    content += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+    content += "<title>" + title + "</title>";
+    content += "<link rel='stylesheet' href='/css/style.css'>";
+    content += "</head>";
+    return content.c_str();
 }
 
 const char*  ResourceHandler::getHeaderRefresh(String title) {
@@ -924,11 +868,26 @@ const char*  ResourceHandler::getHeaderRefresh(String title) {
     String content = "<head>";
     content += "<meta charset='UTF-8'>";
     content += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
-    content += "<meta http-equiv='refresh' content='" + String(PortManager::getInstance().settings.REFRESH_RATE) + "'>";
+    content += "<meta http-equiv='refresh' content='5'>";
     content += "<title>" + title + "</title>";
     content += "<link rel='stylesheet' href='/css/style.css'>";
     content += "</head>";
     return content.c_str();
+}
+const char* ResourceHandler::getRefreshIntervalDropdown() {
+    return R"(
+        <div class="refresh-interval-container">
+            <label for="refresh-interval">Update Interval:</label>
+            <select id="refresh-interval">
+                <option value="0">Never</option>
+                <option value="3">3 Seconds</option>
+                <option value="5">5 Seconds</option>
+                <option value="10">10 Seconds</option>
+                <option value="60">60 Seconds</option>
+                <option value="300">300 Seconds</option>
+            </select>
+        </div>
+    )";
 }
 
 const char* ResourceHandler::getHeaderMenu(){
@@ -978,27 +937,10 @@ const char* ResourceHandler::getActivePortMainContent() {
     return content.c_str();
 }
 
-const char* ResourceHandler::getResetCard(){
-return R"(
-<form action='/console/reset' method='POST' class='reset-form'>
-            <div class='reset-card'>
-                <div class='admin-card-header'>Reset Options</div>
-                <div class='admin-card-content'>
-                    <label for='resetType'>Select Reset Option:</label>
-                    <select id='resetType' name='resetType' required>
-                        <option value='soft'>Soft Reset</option>
-                        <option value='factory'>Factory Reset</option>
-                    </select>
-                </div>
-                <button type='submit' class='admin-submit-button'>Reset</button>
-            </div>
-        </form>
-         )";
-}
 
 const char* ResourceHandler::getRegisterCard(bool isRegistered) {
     String card = R"(
-        <div class='register-card' style='background-color: {{CARD_COLOR}};'>
+        <div class='admin-card center' style='background-color: {{CARD_COLOR}};'>
             <div class='admin-card-header'>Registration Status</div>
             <div class='admin-card-content center'>
                 <p id='status-message'>{{STATUS_MESSAGE}}</p>
@@ -1024,6 +966,12 @@ const char* ResourceHandler::getRegisterCard(bool isRegistered) {
     return card.c_str();
 }
 
+const char* ResourceHandler::getClearButton() {
+    static String html = "<div class='center'><form id='clear-form' action='/console/clear' method='POST'>"
+                         "<button type='submit' class='admin-submit-button' id='clear-button'>Clear Log</button>"
+                         "</form></div>";
+    return html.c_str();
+}
 
 const char* ResourceHandler::getMessageDiv(String message){
     String html = "<br><p class='centered-message' id='error-message'>" + message + "</p><br>";
@@ -1146,6 +1094,7 @@ const char* ResourceHandler::getHelpContent() {
 
     <h3>Device Information:</h3>
     <ul>
+        <li><strong>Description:</strong> <em>Default:</em>Portenta H7 DEV<li>
         <li><strong>Serial Number:</strong> <em>Default:</em> 002A00453130510B31353431. The unique serial number of the device.</li>
         <li><strong>Model:</strong> <em>Default:</em> PORTENTA. The model name of the device.</li>
         <li><strong>Refresh Rate:</strong> <em>Default:</em> 300000 (milliseconds). The refresh rate for updating port data.</li>
@@ -1192,6 +1141,7 @@ const char* ResourceHandler::getHelpContent() {
         <li><strong>DNS Server:</strong> 8.8.8.8</li>
         <li><strong>Gateway:</strong> 192.168.10.1</li>
         <li><strong>Subnet Mask:</strong> 255.255.255.0</li>
+        <li><strong>Description:</strong> Portenta H7 DEV</li>
         <li><strong>MAC Address:</strong> DE:AD:BE:EF:FE:ED</li>
         <li><strong>Serial Number:</strong> 002A00453130510B31353431</li>
         <li><strong>Model:</strong> PORTENTA</li>
