@@ -7,6 +7,7 @@
   Version 2.0.0
 */
 #include "AdminServerManager.h"
+#include "WiFiClient.h"
 #include <cstddef>
 #include <regex>
 //#include "api/IPAddress.h"
@@ -126,6 +127,7 @@ void AdminServerManager::init() {
         */
     //WiFi.config(m_IPAddress.toString().c_str(), m_DNS, m_Gateway, m_Subnet); // Apply static IP configuration
     WiFi.begin(PortManager::getInstance().settings.WIFI_SSID, PortManager::getInstance().settings.WIFI_PASSWORD);
+  
     
     unsigned long startAttemptTime = millis();
 
@@ -1190,30 +1192,6 @@ if(authToken != m_activeToken){
   client.println("</html>");
   client.stop();
 }
-/*
-void AdminServerManager::handleTestConnection(EthernetClient& client, const String& request, int contentLength, const String& authToken) {
-    if (authToken != m_activeToken) {
-        handleError(client, 404, "Un-Authorized Access Request to /admin/test");
-        return;
-    }
-
-    String host = String(PortManager::getInstance().settings.CALL_HOME_HOST);
-    String path = "/api/test";
-
-    String payload = "{}"; // Empty JSON payload
-
-    String serverResponse = sendJsonToServer(host, path, payload);
-    String message = getJSONValue(serverResponse, "message");
-    client.println("HTTP/1.1 200 OK");
-    client.println("Content-Type: application/json");
-    client.println("Connection: close");
-    client.println();
-    client.print("{\"message\":\"");
-    client.print(message);
-    client.println("\"}");
-    client.stop();
-}
-*/
 
 void AdminServerManager::handleTestConnection(Client& client, const String& request, int contentLength, const String& authToken) {
     if (authToken != m_activeToken) {
@@ -1226,10 +1204,13 @@ void AdminServerManager::handleTestConnection(Client& client, const String& requ
 
     String reportPayload = AdminServerManager::generateReportPayload();
 
-    LOG("PAYLOAD FOR REPORTING");
-    LOG(reportPayload);
+    //LOG("PAYLOAD FOR REPORTING");
+    //LOG(reportPayload);
+    //LOG("Server Host: "  + host);
+    //LOG("Path: "  + path);
 
     String serverResponse = AdminServerManager::sendJsonToServer(host, path, reportPayload);
+    LOG("TEST CONNECTION RESPONSE: " + serverResponse);
 
     String message = getJSONValue(serverResponse, "message");
     
@@ -1260,44 +1241,56 @@ String AdminServerManager::getJSONValue(const String& json, const String& key) {
 }
 
 String AdminServerManager::sendJsonToServer(const String& host, const String& path, const String& payload) {
-    EthernetClient httpClient;
+    EthernetClient ethClient;
+    WiFiClient wifiClient;
+    Client* client = nullptr;  // Pointer to the client object
+
     String response = "{\"status\":\"error\",\"message\":\"Failed to connect to server\"}";
 
-    if (httpClient.connect(host.c_str(), 80)) {
+    if (m_serverWifiConnected) {
+        LOG("Sending Payload to server using HTTP via WiFi");
+        client = &wifiClient;
+    } else {
+        LOG("Sending Payload to server using HTTP via Ethernet");
+        client = &ethClient;
+    }
+
+    if (client->connect(host.c_str(), 80)) {
         // Send HTTP POST request
-        httpClient.println("POST " + path + " HTTP/1.1");
-        httpClient.println("Host: " + host);
-        httpClient.println("Content-Type: application/json");
-        httpClient.println("Content-Length: " + String(payload.length()));
-        httpClient.println("Connection: close");
-        httpClient.println();
-        httpClient.println(payload);
+        client->println("POST " + path + " HTTP/1.1");
+        client->println("Host: " + host);
+        client->println("Content-Type: application/json");
+        client->println("Content-Length: " + String(payload.length()));
+        client->println("Connection: close");
+        client->println();
+        client->println(payload);
 
         // Wait for server response
-        while (httpClient.connected()) {
-            if (httpClient.available()) {
-                String line = httpClient.readStringUntil('\n');
+        bool responseBodyStarted = false;
+        String responseBody = "";
+        while (client->connected() || client->available()) {
+            if (client->available()) {
+                String line = client->readStringUntil('\n');
                 if (line == "\r") {
-                    break; // Headers ended, body starts next
+                    responseBodyStarted = true;  // Headers ended, body starts next
+                } else if (responseBodyStarted) {
+                    responseBody += line + '\n';  // Add each line to the response body
                 }
             }
-        }
-
-        // Read the response body
-        String responseBody;
-        while (httpClient.available()) {
-            char c = httpClient.read();
-            responseBody += c;
         }
 
         if (responseBody.length() > 0) {
             response = responseBody;
         }
-
-        httpClient.stop();
+        LOG("Response Body:" + response);
+        client->stop();
+    } else {
+        LOG("Failed to connect to server");
     }
+
     return response;
 }
+
 
 void AdminServerManager::handleRegister(Client& client, const String& request, int contentLength, const String& authToken) {
     if (authToken != m_activeToken) {

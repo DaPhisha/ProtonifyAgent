@@ -10,6 +10,8 @@
 #pragma once
 #include <Arduino.h>
 #include <SPI.h>
+#include <Ethernet.h>
+#include <EthernetSSLClient.h>
 #include <PortentaEthernet.h>
 #include <WiFi.h>
 #include <cstdlib>
@@ -37,7 +39,6 @@ private:
     static void handleJS(Client& client, const String& request, int contentLength, const String &authToken);
     static void handleLogin(Client& client, const String& request, int contentLength, const String &authToken); 
     static void handleLogOut(Client& client, const String& request, int contentLength, const String &authToken);
-
     static void handleTestConnection(Client& client, const String& request, int contentLength, const String& authToken);
 
     //PORT HANDLERS
