@@ -16,6 +16,7 @@ EthernetServer server(HTTP_SERVER_PORT);
 WiFiServer wifiServer(HTTP_SERVER_PORT);
 int m_handlersCount = 0;
 bool m_serverWifiConnected = false;
+bool m_wifiPreffered = false;
 static String m_activeToken = "";
 static unsigned long m_tokenGenerationTime = 0;
 IPAddress m_IPAddress;
@@ -113,8 +114,8 @@ void AdminServerManager::init() {
                          PortManager::getInstance().settings.SUBNET[2],
                          PortManager::getInstance().settings.SUBNET[3]);
 
-    //LOG("Default IP Address: " + m_IPAddress.toString());
-    //LOG("Default DNS Address: " + m_DNS.toString());
+    LOG("Default IP Address: " + m_IPAddress.toString());
+    LOG("Default DNS Address: " + m_DNS.toString());
 
 
     
@@ -127,21 +128,22 @@ void AdminServerManager::init() {
         */
     //WiFi.config(m_IPAddress.toString().c_str(), m_DNS, m_Gateway, m_Subnet); // Apply static IP configuration
     WiFi.begin(PortManager::getInstance().settings.WIFI_SSID, PortManager::getInstance().settings.WIFI_PASSWORD);
-  
     
     unsigned long startAttemptTime = millis();
 
     // Wait for connection attempt to complete
-    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
+    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 5000) {
         delay(100);
     }
 
     if (WiFi.status() == WL_CONNECTED) {
+        m_wifiPreffered = true;
         m_serverWifiConnected = true;
         wifiServer.begin();
         LOG("WiFi server started. IP address: " + WiFi.localIP().toString());
     } else {
         m_serverWifiConnected = false;
+        m_wifiPreffered = false;
         LOG("WiFi connection failed. Trying Ethernet.");
         Ethernet.begin(PortManager::getInstance().settings.MAC, m_IPAddress, m_DNS, m_Gateway, m_Subnet);
         server.begin();
@@ -158,9 +160,6 @@ bool AdminServerManager::checkWiFiReconnection() {
 
 bool AdminServerManager::attemptWiFiReconnection() {
     WiFi.disconnect();
-    //WiFi.encryptionType()
-    //WiFi.config(m_IPAddress.toString().c_str(), m_DNS, m_Gateway, m_Subnet); // Apply static IP configuration
-    //WiFi.mode(WIFI_STA);
     WiFi.begin(PortManager::getInstance().settings.WIFI_SSID, PortManager::getInstance().settings.WIFI_PASSWORD);
     
 
@@ -185,6 +184,13 @@ bool AdminServerManager::attemptWiFiReconnection() {
 
 
 void AdminServerManager::handleClient() {
+
+    if(m_wifiPreffered == true){
+      m_serverWifiConnected = checkWiFiReconnection();
+      if(m_serverWifiConnected == false){
+        m_serverWifiConnected = attemptWiFiReconnection();
+      }
+    }
 
     // Handle client connections
     if (m_serverWifiConnected) {
@@ -1247,11 +1253,18 @@ String AdminServerManager::sendJsonToServer(const String& host, const String& pa
 
     String response = "{\"status\":\"error\",\"message\":\"Failed to connect to server\"}";
 
+    if(m_wifiPreffered == true){
+      m_serverWifiConnected = checkWiFiReconnection();
+      if(m_serverWifiConnected == false){
+        m_serverWifiConnected = attemptWiFiReconnection();
+      }
+    }
+
     if (m_serverWifiConnected) {
-        LOG("Sending Payload to server using HTTP via WiFi");
+        LOG("Sending JSON Payload to server using HTTP via WiFi");
         client = &wifiClient;
     } else {
-        LOG("Sending Payload to server using HTTP via Ethernet");
+        LOG("Sending JSON Payload to server using HTTP via Ethernet");
         client = &ethClient;
     }
 
@@ -1282,10 +1295,10 @@ String AdminServerManager::sendJsonToServer(const String& host, const String& pa
         if (responseBody.length() > 0) {
             response = responseBody;
         }
-        LOG("Response Body:" + response);
+        //LOG("Response Body:" + response);
         client->stop();
     } else {
-        LOG("Failed to connect to server");
+        LOG("Failed to connect to server!");
     }
 
     return response;
@@ -1355,8 +1368,14 @@ String AdminServerManager::generateUnregistrationPayload() {
 
 
 String AdminServerManager::generateReportPayload() {
+    char timestamp[20];  // For YYYY-MM-DD HH:MM:SS format
+    time_t now = time(NULL);
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
+
     String payload = "{";
+    payload += "\"timestamp\":\"" + String(timestamp) + "\",";
     payload += "\"description\":\"" + String(PortManager::getInstance().settings.DESCRIPTION) + "\",";
+
     payload += "\"serialNumber\":\"" + String(PortManager::getInstance().settings.SERIAL_NUMBER) + "\",";
     payload += "\"sharedSecret\":\"" + String(PortManager::getInstance().settings.SHARED_SECRET) + "\",";
     payload += "\"model\":\"" + String(PortManager::getInstance().settings.MODEL) + "\",";

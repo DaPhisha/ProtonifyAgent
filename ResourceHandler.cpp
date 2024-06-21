@@ -823,7 +823,7 @@ if (window.location.pathname.startsWith('/ports')) {
     if (testSSLButton) {
         testSSLButton.addEventListener('click', function() {
             console.log('Test Secure Connection');
-            sslStatusMessage.textContent = 'Testing SSL connection...';
+            sslStatusMessage.textContent = 'Testing Send Status Report';
             sslStatusMessage.style.color = 'blue';
 
             const xhr = new XMLHttpRequest();

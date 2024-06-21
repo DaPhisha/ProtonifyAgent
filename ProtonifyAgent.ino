@@ -47,7 +47,7 @@ AdminServerManager m_webServer;
 // Initialize the time client
 NTPClient timeClient(ntpUDP, "pool.ntp.org");
 time_t systemStartTime;  // Global variable to measure elapsed refresh rates
-time_t lastReportTime = 0;
+time_t lastReportTime = 1;
 
 void setup() {
     LogManager& logManager = LogManager::getInstance(); // Obtain the global LogManager instance
@@ -91,9 +91,8 @@ void loop() {
 
         // Periodically check WiFi connection
         //if (WiFi.status() != WL_CONNECTED) {
-        //m_webServer.attemptWiFiReconnection();
+        //  m_webServer.attemptWiFiReconnection();
         //}
-
 
         // Update ports
         PortManager& portManager = PortManager::getInstance();
@@ -110,23 +109,16 @@ void loop() {
 
         // Check if the refresh interval has passed
         if (difftime(now, lastReportTime) >= portManager.settings.REFRESH_RATE / 1000) {
-            LOG("Updating all active ports and sending report to server.");
-            
-            //Check network connection
-            bool checkWifi = m_webServer.checkWiFiReconnection();
-            if(checkWifi == false){
-              checkWifi = m_webServer.attemptWiFiReconnection();
-            }
 
             // Check to see if the Arduino is registered
-            if (portManager.settings.REGISTRATION_STATUS == true && checkWifi == true) {
-                LOG("Sending report to server.");
+            if (portManager.settings.REGISTRATION_STATUS == true) {
+                //LOG("Sending report to server.");
                 String reportPayload = m_webServer.generateReportPayload();
-                LOG("Report Payload: " + reportPayload);
+                //LOG("Report Payload: " + reportPayload);
 
                 // Here you need to send the payload to the server
                 String response = m_webServer.sendJsonToServer(portManager.settings.CALL_HOME_HOST, "/api/report", reportPayload);
-                LOG("Server response: " + response);
+                //LOG("Server response: " + response);
 
                 // Handle server response (log success or failure)
                 if (m_webServer.getJSONValue(response, "status") == "success") {
