@@ -1,3 +1,4 @@
+#include "Ethernet.h"
 /*
   File: AdminServerManager.cpp
   Date Created: May 11, 2024
@@ -10,11 +11,12 @@
 #include "WiFiClient.h"
 #include <cstddef>
 #include <regex>
-//#include "api/IPAddress.h"
 
 EthernetServer server(HTTP_SERVER_PORT);
 WiFiServer wifiServer(HTTP_SERVER_PORT);
 int m_handlersCount = 0;
+int m_reportsSent = 0;
+String m_lastTimeSent = "";
 bool m_serverWifiConnected = false;
 bool m_wifiPreffered = false;
 static String m_activeToken = "";
@@ -42,6 +44,8 @@ AdminServerManager::AdminServerManager() {
         
         {"GET", "/home", handleHome},
         {"POST", "/home", handleHome},
+
+        {"POST", "/toggle", handleToggle},
         
         {"GET", "/console", handleConsole},
         {"POST", "/console/clear", handleClearLog},
@@ -49,6 +53,9 @@ AdminServerManager::AdminServerManager() {
         
         {"GET", "/admin", handleAdmin},
         {"POST", "/admin", processAdmin},
+
+        {"GET", "/display", handleDisplay},
+        {"POST", "/display", processDislay},
 
         {"GET", "/admin/test", handleTestConnection},
         {"POST", "/admin/register", handleRegister},
@@ -94,6 +101,7 @@ String AdminServerManager::generateRandomToken() {
 
 void AdminServerManager::init() {
     m_activeToken = generateRandomToken();
+
     m_IPAddress = IPAddress(PortManager::getInstance().settings.IP_ADDRESS[0],
                             PortManager::getInstance().settings.IP_ADDRESS[1],
                             PortManager::getInstance().settings.IP_ADDRESS[2],
@@ -114,41 +122,33 @@ void AdminServerManager::init() {
                          PortManager::getInstance().settings.SUBNET[2],
                          PortManager::getInstance().settings.SUBNET[3]);
 
-    LOG("Default IP Address: " + m_IPAddress.toString());
-    LOG("Default DNS Address: " + m_DNS.toString());
-
-
-    
-     /* Change Ip configuration settings disabling the dhcp client
-        *
-        * param local_ip: 	Static ip configuration
-		* param dns_server:     IP configuration for DNS server 1
-        * param gateway: 	Static gateway configuration
-        * param subnet:		Static Subnet mask
-        */
-    //WiFi.config(m_IPAddress.toString().c_str(), m_DNS, m_Gateway, m_Subnet); // Apply static IP configuration
-    WiFi.begin(PortManager::getInstance().settings.WIFI_SSID, PortManager::getInstance().settings.WIFI_PASSWORD);
-    
-    unsigned long startAttemptTime = millis();
-
-    // Wait for connection attempt to complete
-    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 5000) {
+    if(PortManager::getInstance().settings.DISABLEWIFI == false){
+      //setup wifi connection 
+      WiFi.begin(PortManager::getInstance().settings.WIFI_SSID, PortManager::getInstance().settings.WIFI_PASSWORD);
+       unsigned long startAttemptTime = millis();
+      // Wait for connection attempt to complete
+      while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
         delay(100);
-    }
-
-    if (WiFi.status() == WL_CONNECTED) {
+      }
+      if (WiFi.status() == WL_CONNECTED) {
         m_wifiPreffered = true;
         m_serverWifiConnected = true;
         wifiServer.begin();
         LOG("WiFi server started. IP address: " + WiFi.localIP().toString());
-    } else {
-        m_serverWifiConnected = false;
-        m_wifiPreffered = false;
-        LOG("WiFi connection failed. Trying Ethernet.");
-        Ethernet.begin(PortManager::getInstance().settings.MAC, m_IPAddress, m_DNS, m_Gateway, m_Subnet);
-        server.begin();
-        LOG("Ethernet server started. IP address: " + Ethernet.localIP().toString());
+      }
     }
+
+    if (m_serverWifiConnected == false) {
+      m_serverWifiConnected = false;
+      m_wifiPreffered = false;
+      Ethernet.begin(PortManager::getInstance().settings.MAC, m_IPAddress, m_DNS, m_Gateway, m_Subnet);
+      server.begin();
+      LOG("Ethernet server started. IP address: " + Ethernet.localIP().toString());
+    }
+    //LOG("IP Address: " + m_IPAddress.toString());
+    LOG("Gateway Address: " + m_Gateway.toString());
+    LOG("Subnet Address: " + m_Subnet.toString());
+    LOG("DNS Address: " + m_DNS.toString());
 }
 
 bool AdminServerManager::checkWiFiReconnection() {
@@ -210,17 +210,17 @@ void AdminServerManager::handleClientConnection(Client& client) {
     String currentLine = ""; // Stores the current line of the request
     String method = "";      // Stores the HTTP method (GET, POST, etc.)
     String url = "";         // Stores the URL requested
-    bool isHeaderComplete = false; // Flag to check if the HTTP header has been fully received
+    //bool isHeaderComplete = false; // Flag to check if the HTTP header has been fully received
     String requestBody = ""; // Stores the body of a POST request
     String authToken = "";   // Stores the value of the authToken cookie
-    int contentLength = 0;   // Stores the length of the POST request body
+    unsigned int contentLength = 0;   // Stores the length of the POST request body
 
     while (client.connected()) {
         if (client.available()) {
             char c = client.read(); 
             if (c == '\n') { 
                 if (currentLine.length() == 0) {
-                    isHeaderComplete = true; 
+                    //isHeaderComplete = true; 
                     if (method == "POST" && contentLength > 0) {
                         while (requestBody.length() < contentLength) {
                             if (client.available()) {
@@ -294,9 +294,56 @@ void AdminServerManager::handleHome(Client& client, const String& request,int co
     handleError(client, 401, "User not authorized! Please re-login.");
   }
 }
+void AdminServerManager::handleToggle(Client& client, const String& request,int contentLength, const String &authToken) {
+
+  LOG("Handle Toggle: " + request);
+  if(authToken == m_activeToken){
+
+    //parse out the request
+    String usbToggle = extractValueFromPostData(request, "toggleusb");
+    String wifiToggle = extractValueFromPostData(request, "togglewifi");
+
+    if(usbToggle.equals("on")){
+        LOG("Enabling usb: " + usbToggle);
+        
+        if(PortManager::getInstance().settings.DISABLESERIAL == true){
+          //need to turn it on
+          //serial begin ...
+          PortManager::getInstance().settings.DISABLESERIAL = false;
+        }//else currently on do nothing
+    }else if(usbToggle.equals("off")){
+        LOG("Disabling usb: " + usbToggle);
+        if(PortManager::getInstance().settings.DISABLESERIAL == false){
+          //need to turn it off
+          //serial end ...
+          PortManager::getInstance().settings.DISABLESERIAL = true;
+        }//else currently off do nothing
+    }
+    if(wifiToggle.equals("on")){
+      LOG("Enabling wifi: " + wifiToggle);
+      if(PortManager::getInstance().settings.DISABLEWIFI == true){
+          //need to turn it off
+          //serial end ...
+          PortManager::getInstance().settings.DISABLEWIFI = false;
+        }//else currently off do nothing
+    }else if(wifiToggle.equals("off")){
+      LOG("Disnabling wifi: " + wifiToggle);
+      if(PortManager::getInstance().settings.DISABLEWIFI == false){
+          //need to turn it off
+          //serial end ...
+          PortManager::getInstance().settings.DISABLEWIFI = true;
+        }//else currently off do nothing
+    }
+
+    handleHomeLandingPage(client, request,"Protonify Agent Console");
+  }else{
+    handleError(client, 401, "User not authorized! Please re-login.");
+  }
+}
 
 void AdminServerManager::handleRoot(Client& client, const String& request,int contentLength, const String &authToken) {
     String message = "Welcome to the Protonify Agent Management System!" + AdminServerManager::getUptimeString();
+
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: text/html");
     client.println("Connection: close");
@@ -304,10 +351,10 @@ void AdminServerManager::handleRoot(Client& client, const String& request,int co
     client.println("<!DOCTYPE HTML>");
     client.println("<html>");
     client.println("<head>");
+    client.println("<meta charset='UTF-8'>");
+    client.println("<meta name='viewport' content='width=device-width, initial-scale=1.0'>");
     client.println("<link rel='stylesheet' href='/css/style.css'>");
-    client.println("<style>");
-    client.println("");
-    client.println("</style>");
+    client.println("<title>Protonify Agent Login</title>");
     client.println("</head>");
     client.println("<body>");
     client.println("<br><div class='center' style='color: blue;'>" + message + "</div><br>");
@@ -371,6 +418,10 @@ bool AdminServerManager::isValidURL(const String& url) {
 }
 
 void AdminServerManager::processAdmin(Client& client, const String& request, int contentLength, const String &authToken) {
+
+    //LOG("PROCESS ADMIN REQUEST**********");
+    //LOG(request);
+    ///LOG("*******************************");
 
     if(authToken != m_activeToken){
          handleError(client, 404, "Un-Authorized Settings Change Request to /admin");
@@ -467,10 +518,14 @@ void AdminServerManager::processAdmin(Client& client, const String& request, int
         strncpy(PortManager::getInstance().settings.CALL_HOME_HOST, urlDecode(callHomeHost).c_str(), MAX_CALL_HOME_HOST);
         
         PortManager::getInstance().writeToFlash();
+        LOG("SUCCESS UPDATE SETTINGS");
+
         sendSuccessResponse(client,"SUCCESS: Admin settings written to flash.");
 
     } else {
+        LOG("FAILED UPDATE SETTINGS");
         sendErrorResponse(client, errorMessage);
+        
     }
 }
 
@@ -638,6 +693,7 @@ void AdminServerManager::handleConsole(Client& client, const String& request,int
     client.print(ResourceHandler::getHeaderRefresh("Logger Console"));
     client.println("<body>");
     client.print(ResourceHandler::getHeaderMenu());
+    client.print(ResourceHandler::getRefreshIntervalDropdown());
     client.println("<main class='main-content'>");
   
     String user_message = "Welcome to the console logger.";
@@ -818,7 +874,6 @@ void AdminServerManager::handleHomeLandingPage(Client& client, const String& req
     client.print(ResourceHandler::getHeader("Agent Dashboard"));
     client.println("<body>");
     client.print(ResourceHandler::getHeaderMenu());
-    
     client.println("<main class='main-content'>");
     client.println("<br><p class='centered-message'>" + user_message + "</p><br>");
     client.println("<div class='stats-container'>");
@@ -840,6 +895,30 @@ void AdminServerManager::handleHomeLandingPage(Client& client, const String& req
 
     //ports
     client.print(ResourceHandler::getStatCard("Ports Enabled", String(PortManager::getInstance().getActivePortCount())));
+    client.print(ResourceHandler::getStatCard("Reports Delivered", String(m_reportsSent)));
+    client.print(ResourceHandler::getStatCard("Last Reported", m_lastTimeSent));
+
+    
+    String STATUS_TEMP = "Link OFF";
+    if (Ethernet.linkStatus() == LinkON) {
+        STATUS_TEMP = "Link ON";
+    }
+    client.print(ResourceHandler::getStatCard("Ethernet Connected", STATUS_TEMP));
+
+    if (m_serverWifiConnected) {
+        STATUS_TEMP = "WiFi ON";
+    } else {
+        STATUS_TEMP = "WiFi OFF";
+    }
+    client.print(ResourceHandler::getStatCardWifi("WiFi Connected", STATUS_TEMP));
+
+    if (LogManager::getInstance().checkSerialConnection()) {
+        STATUS_TEMP = "USB CONNECTED";
+    } else {
+        STATUS_TEMP = "USB NOT CONNECTED";
+    }
+    client.print(ResourceHandler::getStatCardUSB("USB Cable", STATUS_TEMP));
+    
     // Close stats container
     client.println("</div>");
 
@@ -1199,6 +1278,86 @@ if(authToken != m_activeToken){
   client.stop();
 }
 
+void AdminServerManager::handleDisplay(Client& client, const String& request, int contentLength, const String& authToken){
+  if (authToken != m_activeToken) {
+        handleError(client, 404, "Un-Authorized Access Request to /display handler");
+        return;
+  }
+  client.println("HTTP/1.1 200 OK");
+  client.println("Content-Type: text/html");
+  client.println("Connection: close");
+  client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;"); 
+  client.println();
+  client.println("<!DOCTYPE HTML>");
+  client.println("<html lang='en'>");
+  client.print(ResourceHandler::getHeader("Display Manager"));
+  client.println("<body>");
+  client.print(ResourceHandler::getHeaderMenu());
+  String user_message = "Welcome to the Display Tool.";
+  client.println("<br><p class='centered-message'>" + user_message + "</p><br>");
+  client.println("<main class='main-content center'>");
+  
+  client.print(ResourceHandler::getDisplayCard(PortManager::getInstance().settings.DISPLAY_TEXT,PortManager::getInstance().settings.DISPLAY_STATUS));
+  client.println("<br><br><br><br><br><br style='min-height: 150px'></main>");
+  client.print(ResourceHandler::getFooter());
+  client.println("</body>");
+  client.println("</html>");
+  client.stop();
+
+}
+void AdminServerManager::processDislay(Client& client, const String& request, int contentLength, const String &authToken){
+  if (authToken != m_activeToken) {
+        handleError(client, 404, "Un-Authorized Access Request to /display processing");
+        return;
+  }
+  String message = "PROCESS DISPLAY POST";
+  //extract the display text
+  String temp = extractValueFromPostData(request, "display-txt");
+  strncpy(PortManager::getInstance().settings.DISPLAY_TEXT, temp.c_str(),MAX_DISPLAY);
+
+  String displayToggle = extractValueFromPostData(request, "display-status");
+  if(displayToggle.equals("on")){
+      LOG("Enabling DISPLAY: " + displayToggle);
+      if(PortManager::getInstance().settings.DISPLAY_STATUS == false){
+        //need to turn it on
+        //serial begin ...
+        PortManager::getInstance().settings.DISPLAY_STATUS = true;
+      }//else currently on do nothing
+  }else if(displayToggle.equals("off")){
+      LOG("Disabling DISPLAY: " + displayToggle);
+      if(PortManager::getInstance().settings.DISPLAY_STATUS == true){
+        //need to turn it off
+        //serial end ...
+        PortManager::getInstance().settings.DISPLAY_STATUS = false;
+      }//else currently off do nothing
+  }
+
+  LOG("DISPLAY TXT UPDATED: (STATUS) " + displayToggle + " " + String(PortManager::getInstance().settings.DISPLAY_TEXT));
+  
+  //update the display status in flash as well
+  PortManager::getInstance().writeToFlash();
+
+  client.println("HTTP/1.1 200 OK");
+  client.println("Content-Type: text/html");
+  client.println("Connection: close");
+  client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;"); 
+  client.println();
+  client.println("<!DOCTYPE HTML>");
+  client.println("<html lang='en'>");
+  client.print(ResourceHandler::getHeader("Display Manager"));
+  client.println("<body>");
+  client.print(ResourceHandler::getHeaderMenu());
+  String user_message = "Updated Display Tool.";
+  client.println("<br><p class='centered-message'>" + user_message + "</p><br>");
+  client.println("<main class='main-content center'>");
+  client.print(ResourceHandler::getDisplayCard(PortManager::getInstance().settings.DISPLAY_TEXT,PortManager::getInstance().settings.DISPLAY_STATUS));
+  client.println("<br><br><br><br><br><br style='min-height: 150px'></main>");
+  client.print(ResourceHandler::getFooter());
+  client.println("</body>");
+  client.println("</html>");
+  client.stop();
+}
+
 void AdminServerManager::handleTestConnection(Client& client, const String& request, int contentLength, const String& authToken) {
     if (authToken != m_activeToken) {
         handleError(client, 404, "Un-Authorized Access Request to /admin/test");
@@ -1365,15 +1524,14 @@ String AdminServerManager::generateUnregistrationPayload() {
     payload += "}";
     return payload;
 }
-
+void AdminServerManager::updatedReportStats(){
+    m_lastTimeSent = LogManager::getInstance().timeToStringNow();
+    m_reportsSent = m_reportsSent + 1;
+}
 
 String AdminServerManager::generateReportPayload() {
-    char timestamp[20];  // For YYYY-MM-DD HH:MM:SS format
-    time_t now = time(NULL);
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
-
     String payload = "{";
-    payload += "\"timestamp\":\"" + String(timestamp) + "\",";
+    payload += "\"timestamp\":\"" +  LogManager::getInstance().timeToStringNow() + "\",";
     payload += "\"description\":\"" + String(PortManager::getInstance().settings.DESCRIPTION) + "\",";
 
     payload += "\"serialNumber\":\"" + String(PortManager::getInstance().settings.SERIAL_NUMBER) + "\",";

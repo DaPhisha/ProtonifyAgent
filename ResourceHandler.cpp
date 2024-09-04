@@ -130,7 +130,7 @@ body {
 }
 
 .login-form input {
-    width: 100%;
+    width: 80%;
     padding: 8px;
     margin-bottom: 10px;
     border: 1px solid #ddd;
@@ -294,7 +294,7 @@ body {
 /* Stat Card */
 .stat-card {
     width: 250px;
-    height: 250px;
+    height: 350px;
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 5px;
@@ -914,6 +914,7 @@ return R"(
             </div>
             <a href='/console'>Console</a>
             <a href='/help'>Help</a>
+            <a href='/display'>Display</a>
             <a href='/logout'>Logout</a>
         </div>
         <button class='navbar-toggle' id='navbarToggle'>☰</button>
@@ -935,6 +936,38 @@ const char* ResourceHandler::getActivePortMainContent() {
     content += "</div>";
     content += "</main>";
     return content.c_str();
+}
+
+const char* ResourceHandler::getDisplayCard(String displayTxt, bool displayStatus) {
+    String card = R"(
+        <div class='admin-card center' style='background-color: {{CARD_COLOR}};'>
+            <div class='admin-card-header'>Registration Status</div>
+            <div class='admin-card-content center'>
+                <form id='register-form' action='/display' method='POST'>
+                  <label for='display-status'>Display Status:</label><br>
+                  <input type='checkbox' id='display-status' name='display-status' {{DISPLAY_STATUS}} > <p class='centered-message'>Enable External Display<p>
+                  <hr>
+                  <label for='display-txt'>Display Text:</label><br>
+                  <input type='text' id='display-txt' name='display-txt' value='{{DISPLAY_TXT}}'required>
+                    <br><br><br>
+                    <button type='submit' id='display-button'>Update Display</button>
+                </form>
+                <p class='centered-message' id='server-message'></p>
+            </div>
+        </div>
+    )";
+    
+    if(displayStatus == false){
+      
+      card.replace("{{DISPLAY_STATUS}}", "");
+    }else{
+      
+      card.replace("{{DISPLAY_STATUS}}", "checked");
+
+    }
+    card.replace("{{DISPLAY_TXT}}", displayTxt);
+
+    return card.c_str();
 }
 
 
@@ -1044,6 +1077,71 @@ const char* ResourceHandler::getStatCard(String title, String value) {
             </div>
         </div>
     )";
+    return statCard.c_str();
+}
+const char* ResourceHandler::getStatCardUSB(String title, String value) {
+    String toggleValue = "checked";
+    if (PortManager::getInstance().settings.DISABLESERIAL == true) {
+        toggleValue = "unchecked";
+    }
+
+    String statCard = R"(
+        <div class='stat-card'>
+          <div class='stat-card-header'>System Stats</div>
+          <div class='stat-card-content'>
+            <h3>)";
+    statCard += title;
+    statCard += R"(</h3>
+            <p>)";
+    statCard += value;
+    statCard += R"(</p>
+          </div>
+          <form action='/toggle' method='POST' id='usb-toggle'>
+            
+            <input type='checkbox' id='toggleusb' name='toggleusb')";
+    statCard += toggleValue;
+    statCard += R"(> <p class='centered-message'>Enable USB</p>
+          <input type='hidden' name='toggleusb' value='off'> <!-- Hidden input for off state -->
+          <div class='center'>
+            <button type='submit' class='admin-submit-button'>Update</button>
+          </div>
+          </form>
+        </div>
+    )";
+
+    return statCard.c_str();
+}
+
+const char* ResourceHandler::getStatCardWifi(String title, String value) {
+    String toggleValue = "checked";
+    if (PortManager::getInstance().settings.DISABLEWIFI == true) {
+        toggleValue = "unchecked";
+    }
+
+    String statCard = R"(
+        <div class='stat-card'>
+          <div class='stat-card-header'>System Stats</div>
+          <div class='stat-card-content'>
+            <h3>)";
+    statCard += title;
+    statCard += R"(</h3>
+            <p>)";
+    statCard += value;
+    statCard += R"(</p>
+          </div>
+          <form action='/toggle' method='POST' id='wifi-toggle'>
+            
+            <input type='checkbox' id='togglewifi' name='togglewifi')";
+    statCard += toggleValue;
+    statCard += R"(> <p class='centered-message'>Enable Wifi</p>
+              <input type='hidden' name='togglewifi' value='off'> <!-- Hidden input for off state -->
+              <div class='center'>
+                <button type='submit' class='admin-submit-button'>Update</button>
+              </div>
+          </form>
+        </div>
+    )";
+
     return statCard.c_str();
 }
 

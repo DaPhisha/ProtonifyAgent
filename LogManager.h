@@ -9,6 +9,7 @@ File: LogManager.h
 #define LOGMANAGER_H
 
 #include <Arduino.h>
+#include <NTPClient.h>
 #include <time.h>
 #include <stdexcept>  // Include for std::runtime_error
 
@@ -21,10 +22,14 @@ class LogManager {
 public:
     void init(bool SET_DEBUG);
     void writeLog(String message);
-    void writeDebugLog(String message);
     static LogManager& getInstance();
     String timeToString(time_t t);
+    String timeToStringNow();
+    static void updateTime();
+    static time_t getCurrentTime();
+    static bool checkSerialConnection();
 private:
+    static void setControllerTime();
     bool m_debug;
     LogManager() {} // Constructor is private for singleton pattern
 };

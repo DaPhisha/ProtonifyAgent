@@ -1,3 +1,4 @@
+#include "pins_arduino.h"
 /*
 File: PortManager.cpp
 Date Created: April 29, 2024
@@ -40,7 +41,7 @@ void PortManager::initializeDefaults() {
         strncpy(settings.Admin_USERNAME, "admin", sizeof(settings.Admin_USERNAME));
         //set default password
         strncpy(settings.Admin_PASSWORD, "password", sizeof(settings.Admin_PASSWORD));
-        strncpy(settings.WIFI_SSID, "HAL2000", sizeof(settings.WIFI_SSID));
+        strncpy(settings.WIFI_SSID, "HAL2001", sizeof(settings.WIFI_SSID));
         strncpy(settings.WIFI_PASSWORD, "quiettree081", sizeof(settings.WIFI_PASSWORD));
          //Default IP Address
          settings.IP_ADDRESS[0] = 192;
@@ -83,6 +84,10 @@ void PortManager::initializeDefaults() {
          // Initialize date fields
          settings.DATE_LAST_UPDATED = time(NULL);  
          settings.DATE_LAST_REBOOT = time(NULL);
+
+         //disable serial set to false
+         settings.DISABLESERIAL = false;
+         settings.DISABLEWIFI = true;
          
          //reset the log counters and log array
          settings.currentLogIndex = 0;
@@ -113,13 +118,13 @@ void PortManager::loadPortDefaults(){
         setPortValues(0,true,true,0,-1,ANALOG_INPUT,ONOFF,"PIN AI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(1,false,false,1,-1,ANALOG_INPUT,MA420,"PIN AI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(2,false,false,2,-1,ANALOG_INPUT,CTEMP,"PIN AI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(3,true,false,-1,0,ANALOG_OUTPUT,CTEMP,"PIN AO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(3,true,true,-1,0,ANALOG_OUTPUT,CTEMP,"PIN AO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(4,false,false,-1,1,ANALOG_OUTPUT,VALVE,"PIN AO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(5,true,false,-1,2,ANALOG_OUTPUT,FILL,"PIN AO_02", 0.00,0.00,currentTime,"INIT DEFAULT");
+        setPortValues(5,true,true,-1,2,ANALOG_OUTPUT,FILL,"PIN AO_02", 0.00,0.00,currentTime,"INIT DEFAULT");
         setPortValues(6,false,false,-1,3,ANALOG_OUTPUT,PULSE,"PIN AO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         //start of digital input pins 0-7
-        setPortValues(7,true,true,DIN_READ_CH_PIN_00,-1,DIGITAL_INPUT,ONOFF,"DI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(7,true,false,DIN_READ_CH_PIN_00,-1,DIGITAL_INPUT,FLOW,"DI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(8,false,false,DIN_READ_CH_PIN_01,-1,DIGITAL_INPUT,MA420,"DI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(9,false,false,DIN_READ_CH_PIN_02,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(10,false,false,DIN_READ_CH_PIN_03,-1,DIGITAL_INPUT,CTEMP,"DI_03", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -176,7 +181,7 @@ void PortManager::loadPortDefaults(){
         setPortValues(47,false,false,6,6,PTEMP,CTEMP,"TMP TP-02", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(48,false,false,7,7,PTEMP,CTEMP,"TMP TN-02", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(49,false,false,8,8,PTEMP,CTEMP,"TMP RTD-02", 0.00,0.00, currentTime,"INIT DEFAULT");
-        //end temp probes
+        //end temp probesIO_READ_CH_PIN_00
         
         //start of encoders pins
         setPortValues(50,true,true,0,0,ENCODER,PULSE,"ENCODER A0", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -366,6 +371,7 @@ String PortManager::circuitTypeToString(CIRCUIT_TYPE type){
         case VALVE: return "Valve Reading";
         case FILL: return "Tank Fill Level";
         case PULSE: return "Pulse";
+        case FLOW: return "Flow";
         default: return "UNKNOWN";
     }
 
@@ -379,6 +385,7 @@ String PortManager::circuitTypeToCode(CIRCUIT_TYPE type){
         case VALVE: return "VALVE";
         case FILL: return "FILL";
         case PULSE: return "PULSE";
+        case FLOW: return "FLOW";
         default: return "UNKNOWN";
     }
 
@@ -427,4 +434,49 @@ String PortManager::timeToString(time_t t) {
     struct tm* tm_info = localtime(&t);
     strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", tm_info);
     return String(buffer); // Wrapping the result in double quotes
+}
+
+String PortManager::inputPinNumberToString(int pinNumber){
+  switch (pinNumber) {
+        case DIN_READ_CH_PIN_00: return "DIN_READ_CH_PIN_00";
+        case DIN_READ_CH_PIN_01: return "DIN_READ_CH_PIN_01";
+        case DIN_READ_CH_PIN_02: return "DIN_READ_CH_PIN_02";
+        case DIN_READ_CH_PIN_03: return "DIN_READ_CH_PIN_03";
+        case DIN_READ_CH_PIN_04: return "DIN_READ_CH_PIN_04";
+        case DIN_READ_CH_PIN_05: return "DIN_READ_CH_PIN_05";
+        case DIN_READ_CH_PIN_06: return "DIN_READ_CH_PIN_06";
+        case DIN_READ_CH_PIN_07: return "DIN_READ_CH_PIN_07";
+        /*case PIN_A0: return "PIN_A0";
+        case PIN_A1: return "PIN_A1";
+        case PIN_A2: return "PIN_A2";
+        case PIN_A3: return "PIN_A3";
+        */
+        case IO_READ_CH_PIN_00: return "IO_READ_CH_PIN_00";
+        case IO_READ_CH_PIN_01: return "IO_READ_CH_PIN_01";
+        case IO_READ_CH_PIN_02: return "IO_READ_CH_PIN_02";
+        case IO_READ_CH_PIN_03: return "IO_READ_CH_PIN_03";
+        case IO_READ_CH_PIN_04: return "IO_READ_CH_PIN_04";
+        case IO_READ_CH_PIN_05: return "IO_READ_CH_PIN_05";
+        case IO_READ_CH_PIN_06: return "IO_READ_CH_PIN_06";
+        case IO_READ_CH_PIN_07: return "IO_READ_CH_PIN_07";
+        case IO_READ_CH_PIN_08: return "IO_READ_CH_PIN_08";
+        case IO_READ_CH_PIN_09: return "IO_READ_CH_PIN_09";
+        case IO_READ_CH_PIN_10: return "IO_READ_CH_PIN_10";
+        case IO_READ_CH_PIN_11: return "IO_READ_CH_PIN_11";
+        /*
+        case IO_WRITE_CH_PIN_00: return "IO_WRITE_CH_PIN_00";
+        case IO_WRITE_CH_PIN_01: return "IO_WRITE_CH_PIN_01";
+        case IO_WRITE_CH_PIN_02: return "IO_WRITE_CH_PIN_02";
+        case IO_WRITE_CH_PIN_03: return "IO_WRITE_CH_PIN_03";
+        case IO_WRITE_CH_PIN_04: return "IO_WRITE_CH_PIN_04";
+        case IO_WRITE_CH_PIN_05: return "IO_WRITE_CH_PIN_05";
+        case IO_WRITE_CH_PIN_06: return "IO_WRITE_CH_PIN_06";
+        case IO_WRITE_CH_PIN_07: return "IO_WRITE_CH_PIN_07";
+        case IO_WRITE_CH_PIN_08: return "IO_WRITE_CH_PIN_08";
+        case IO_WRITE_CH_PIN_09: return "IO_WRITE_CH_PIN_09";
+        case IO_WRITE_CH_PIN_10: return "IO_WRITE_CH_PIN_10";
+        case IO_WRITE_CH_PIN_11: return "IO_WRITE_CH_PIN_11";
+        */
+        default: return "UNKNOWN";
+    }
 }

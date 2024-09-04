@@ -17,6 +17,7 @@ Version: 1.0.0
 #define MAX_USERNAME 32
 #define MAX_SSID 32
 #define MAX_PASSWORD 32
+#define MAX_DISPLAY 32
 #define MAX_SERIAL 26
 #define MAX_MODEL 32
 #define MAX_SHARED_SECRET 32
@@ -27,10 +28,10 @@ constexpr int MAX_STATE_TXT = 32;
 //*******************************************************************
 //*******************************************************************
 //*******************************************************************
-const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH06152024";
+const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH09032024";
 
 enum CIRCUIT_TYPE {
-    NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, CIRCUIT_TYPE_COUNT
+    NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, FLOW, CIRCUIT_TYPE_COUNT
 };
 
 enum PIN_TYPE {
@@ -70,6 +71,10 @@ struct AdminSettings {
         char SHARED_SECRET[MAX_SHARED_SECRET + 1];//32 plus end of line
         char CALL_HOME_HOST[MAX_CALL_HOME_HOST +1];//128 plus end of line
         bool REGISTRATION_STATUS;
+        bool DISPLAY_STATUS;
+        char DISPLAY_TEXT[MAX_DISPLAY+1];
+        bool DISABLESERIAL;
+        bool DISABLEWIFI;
         char logEntries[MAX_LOG_ENTRIES][MAX_LOG_STRING_CHAR];
         size_t currentLogIndex;
         time_t DATE_LAST_UPDATED;
@@ -99,6 +104,7 @@ public:
     String AllPortsToString();
     String pinTypeToString(PIN_TYPE type);
     String circuitTypeToString(CIRCUIT_TYPE type);
+    String inputPinNumberToString(int pinNumber);
     String circuitTypeToCode(CIRCUIT_TYPE type);
     int getActivePortCount();
     String ipToString(const uint8_t ip[4]);

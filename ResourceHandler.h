@@ -23,10 +23,13 @@ public:
     static const char* getLoginCard();
     static const char* getHeaderMenu();
     static const char* getStatCard(String title, String statValue);
+    static const char* getStatCardWifi(String title, String statValue);
+    static const char* getStatCardUSB(String title, String statValue);
     static const char* getPortMainContent();
     static const char* getMessageDiv(String msg);
     static const char* getActivePortMainContent();
     static const char* getHelpContent(); 
+    static const char* getDisplayCard(String displayTxt, bool displayStatus);
     static const char* getRegisterCard(bool isRegistered);
     static const char* getClearButton();
     static const char* getRefreshIntervalDropdown();

@@ -29,6 +29,7 @@ private:
     //ANY function called from within a static function must also be static
     static void handleRoot(Client& client, const String& request, int contentLength, const String &authToken);
     static void handleHome(Client& client, const String& request, int contentLength, const String &authToken);
+    static void handleToggle(Client& client, const String& request, int contentLength, const String &authToken);
     static void handleAdmin(Client& client, const String& request, int contentLength, const String &authToken);
     static void handleConsole(Client& client, const String& request, int contentLength, const String &authToken);
     static void handleClearLog(Client& client, const String& request, int contentLength, const String &authToken);
@@ -40,7 +41,8 @@ private:
     static void handleLogin(Client& client, const String& request, int contentLength, const String &authToken); 
     static void handleLogOut(Client& client, const String& request, int contentLength, const String &authToken);
     static void handleTestConnection(Client& client, const String& request, int contentLength, const String& authToken);
-
+    static void handleDisplay(Client& client, const String& request, int contentLength, const String& authToken);
+    static void processDislay(Client& client, const String& request, int contentLength, const String &authToken);
     //PORT HANDLERS
     static void handleGetAnalogINPorts(Client& client, const String& request, int contentLength, const String &authToken);
     static void handleAnalogINPorts(Client& client, const String& request, int contentLength, const String &authToken);
@@ -92,4 +94,6 @@ public:
     static String getJSONValue(const String& json, const String& key);
     static bool attemptWiFiReconnection();
     static bool checkWiFiReconnection(); 
+    static void updatedReportStats();
+    
 };
