@@ -31,23 +31,19 @@ Define port logic rules on what ports can be assigned which circuit types.  CRIT
 #include "PortManager.h"
 #include "NetworkManager.h"
 #include "AdminServerManager.h"
-#include "SharedMemory.h"
-
+#include "ActionQueue.h"
+#include "ActionTest.h"
+#include "ActionONOFF.h"
+#include "ActionMA420.h"
+#include "ActionCTEMP.h"
 #define MAX_EVENTS 10  // Maximum number of scheduled events
 #define MASTER_DEBUG true
 
-// Shared data in TCM
-extern volatile char logBuffer[LOG_BUFFER_SIZE];
-extern volatile int logWriteIndex;
-extern volatile int logReadIndex;
-extern volatile bool logBufferLock;
-extern volatile Ports sharedPorts[MAX_PORTS]; 
-
-const char* PROJECT_VERSION = "2.0.0"; // Project version
+const char* PROJECT_VERSION = "2.0.1"; // Project version
 uint32_t m_loopCounter = 0;
 // Initialize an event scheduler
 EventScheduler scheduler(MAX_EVENTS); 
-
+ActionQueue actionQueue;
 // Initialize network interfaces
 AdminServerManager m_webServer;
 
@@ -65,13 +61,11 @@ void setup() {
         portManager.init();
         m_webServer.init();
 
-        // Initialize Wire transmission
+        // Initialize Wire transmission -- MOVE to M4?
         Wire.begin();
         if (!MachineControl_DigitalInputs.begin()) {
           LOG("Failed to initialize the digital input GPIO expander!");
         }
-
-        
     } catch (const std::exception& e) { 
         LogManager::getInstance().writeLog("*********MAJOR STARTUP FAULT************");
         LogManager::getInstance().writeLog("Caught std::exception: " + String(e.what()));
@@ -81,6 +75,7 @@ void setup() {
     }
     logManager.writeLog("System Initialization COMPLETE");
 }
+
 
 void loop() {
     try {
@@ -99,15 +94,23 @@ void loop() {
         if (m_loopCounter >= portManager.settings.REFRESH_RATE ) {
             //update all ports every REFRESH cycle
 
-            for (int i = 0; i < MAX_PORTS; ++i) {
+           /* for (int i = 0; i < MAX_PORTS; ++i) {
                 Ports& port = portManager.settings.ports[i];
                 if (port.isActive) {
 
                     //MAYBE SWITCH HERE BASED ON READ VS WRITE
                     updatePort(port);
                     port.lastUpdated = LogManager::getInstance().getCurrentTime();  // Update the lastUpdated time for each active port
+                    //Add to Action Queue
                 }
             }
+            */
+            //Populate Queue
+            populateActionQueue();
+            //Prioritize queue by highest priority value (highest to lowest)
+             actionQueue.sortActions(); 
+            //Execute Action Queue
+            actionQueue.executeActions();
 
             // Check to see if the Arduino is registered
             if (portManager.settings.REGISTRATION_STATUS == true) {
@@ -132,7 +135,8 @@ void loop() {
 
             //UPDATE DISPLAY HERE
             //CODE TO UPDATE DISPLAY EVERY LOOP
-
+            //RESET ACTION QUEUE
+            actionQueue.clearActions();  
             //reset the Loop counter
             m_loopCounter = 0;
         }
@@ -151,28 +155,84 @@ void shutdown() {
     LogManager::getInstance().writeLog("*********SYSTEM SHUTDOWN************");
 }
 
+
+//function that iterates through the current active port types and assigns and action to it.
+void populateActionQueue() {
+
+  PortManager& portManager = PortManager::getInstance();
+    for (int i = 0; i < MAX_PORTS; ++i) {
+        Ports& port = portManager.settings.ports[i];
+        if (port.isActive) {
+            ActionObject* action = nullptr;
+
+            // Create action objects based on port type
+            //CIRCUIT_TYPE
+            //NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, FLOW, CIRCUIT_TYPE_COUNT
+            switch (port.circuitType) {
+                case ONOFF:
+                    action = new ActionONOFF(&port,9,"ONOFF");  // Add ONOFF simulation action
+                    break;
+                case MA420:
+                    action = new ActionMA420(&port,7,"MA420");  // Add read digital pin action
+                    break;
+                case CTEMP:
+                    action = new ActionCTEMP(&port,9,"CTEMP");  // Add read digital pin action
+                    break;
+                case VALVE:
+                    action = new ActionTest(&port,1,"VALVE");  // Add read digital pin action
+                    break;
+                case FILL:
+                    action = new ActionTest(&port,1,"FILL");  // Add read digital pin action
+                case PULSE:
+                    action = new ActionTest(&port,1,"PULSE");  // Add read digital pin action
+                    break;
+                case FLOW:
+                    action = new ActionTest(&port,1,"FLOW");  // Add read digital pin action
+                    break;
+                default:
+                    break;
+            }
+
+            if (action) {
+                actionQueue.addAction(action);  // Add action to queue
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
 //https://docs.arduino.cc/tutorials/portenta-machine-control/user-manual/
 void updatePort(Ports& port) {
     PortManager& portManager = PortManager::getInstance();
     try {
         switch (port.circuitType) {
             case ONOFF:
-                simulateONOFF(port);
+                //simulateONOFF(port);
+
+                //Add Action Queue type for ONOFF
+
                 break;
             case MA420:
-                simulateMA420(port);
+                //simulateMA420(port);
                 break;
             case CTEMP:
-                simulateCTEMP(port);
+                //simulateCTEMP(port);
                 break;
             case VALVE:
-                simulateVALVE(port);
+                //simulateVALVE(port);
                 break;
             case FILL:
-                simulateFILL(port);
+                //simulateFILL(port);
                 break;
             case FLOW:
-                simulateFLOW(port);
+                //simulateFLOW(port);
                 if(port.pinType == DIGITAL_INPUT){
                     
                     uint16_t readings = MachineControl_DigitalInputs.read(port.readPinNumber);
@@ -185,7 +245,7 @@ void updatePort(Ports& port) {
                 }
                 break;
             case PULSE:
-                simulatePULSE(port);
+                //simulatePULSE(port);
                 break;
             default:
                 strncpy(port.state, "UNKNOWN", sizeof(port.state));
@@ -195,50 +255,6 @@ void updatePort(Ports& port) {
         LogManager::getInstance().writeLog("Error updating port: " + String(e.what()));
     } catch (...) {
         LogManager::getInstance().writeLog("Unknown error updating port.");
-    }
-}
-
-void simulateONOFF(Ports& port) {
-    if (port.isSimulated) {
-        port.currentReading = port.currentReading == 0 ? 1 : 0;
-        if(port.currentReading == 0){
-
-        strcpy(port.state, String("OFF").c_str());
-    
-        }else{
-          strcpy(port.state, String("ON").c_str());
-        }
-    }
-}
-
-void simulateMA420(Ports& port) {
-    if (port.isSimulated) {
-        int randomValue = random(0, 3);  // Generate a random number between 0 and 2
-        if (randomValue == 0) {
-            port.currentReading = 0;
-            strcpy(port.state, String("No Signal").c_str());
-        } else if (randomValue == 1) {
-            port.currentReading = 4;
-            strcpy(port.state, String("4 mA").c_str());
-        } else {
-            port.currentReading = 20;
-            strcpy(port.state, String("20 mA").c_str());
-        }
-    }
-}
-
-void simulateCTEMP(Ports& port) {
-    if (port.isSimulated) {
-        port.currentReading = random(-40, 100);  // Simulate a temperature reading
-      if(port.lastReading < port.currentReading){
-        strcpy(port.state, String("Warming").c_str());
-      }
-      if(port.lastReading == port.currentReading){
-        strcpy(port.state, String("Constant").c_str());
-      }
-      if(port.lastReading > port.currentReading){
-        strcpy(port.state, String("Cooling").c_str());
-      }
     }
 }
 
