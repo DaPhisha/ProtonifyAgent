@@ -41,13 +41,13 @@ void PortManager::initializeDefaults() {
         strncpy(settings.Admin_USERNAME, "admin", sizeof(settings.Admin_USERNAME));
         //set default password
         strncpy(settings.Admin_PASSWORD, "password", sizeof(settings.Admin_PASSWORD));
-        strncpy(settings.WIFI_SSID, "HAL2001", sizeof(settings.WIFI_SSID));
-        strncpy(settings.WIFI_PASSWORD, "quiettree081", sizeof(settings.WIFI_PASSWORD));
+        strncpy(settings.WIFI_SSID, "ArduinoNetwork", sizeof(settings.WIFI_SSID));
+        strncpy(settings.WIFI_PASSWORD, "hotdogtimemachine", sizeof(settings.WIFI_PASSWORD));
          //Default IP Address
          settings.IP_ADDRESS[0] = 192;
          settings.IP_ADDRESS[1] = 168;
-         settings.IP_ADDRESS[2] = 10;
-         settings.IP_ADDRESS[3] = 200;
+         settings.IP_ADDRESS[2] = 11;
+         settings.IP_ADDRESS[3] = 98;
          //default IP Address
          settings.DNS[0] = 8;
          settings.DNS[1] = 8;
@@ -56,8 +56,8 @@ void PortManager::initializeDefaults() {
          //Default Gateway
          settings.GATEWAY[0] = 192;
          settings.GATEWAY[1] = 168;
-         settings.GATEWAY[2] = 10;
-         settings.GATEWAY[3] = 1;
+         settings.GATEWAY[2] = 11;
+         settings.GATEWAY[3] = 254;
 
          //Default Subnet
          settings.SUBNET[0] = 255;
@@ -79,7 +79,7 @@ void PortManager::initializeDefaults() {
          settings.REFRESH_RATE = 300000;//every 5 mins
          strncpy(settings.SHARED_SECRET,  "12345678901234567890123456789012", sizeof(settings.SHARED_SECRET) - 1);
          settings.SHARED_SECRET[sizeof(settings.SHARED_SECRET) - 1] = '\0';
-         strncpy(settings.CALL_HOME_HOST,"192.168.10.199",sizeof(settings.CALL_HOME_HOST));
+         strncpy(settings.CALL_HOME_HOST,"192.168.11.99",sizeof(settings.CALL_HOME_HOST));
          settings.REGISTRATION_STATUS = false;
          // Initialize date fields
          settings.DATE_LAST_UPDATED = time(NULL);  
@@ -87,7 +87,7 @@ void PortManager::initializeDefaults() {
 
          //disable serial set to false
          settings.DISABLESERIAL = false;
-         settings.DISABLEWIFI = true;
+         settings.DISABLEWIFI = false;
          
          //reset the log counters and log array
          settings.currentLogIndex = 0;
