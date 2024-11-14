@@ -41,13 +41,13 @@ void PortManager::initializeDefaults() {
         strncpy(settings.Admin_USERNAME, "admin", sizeof(settings.Admin_USERNAME));
         //set default password
         strncpy(settings.Admin_PASSWORD, "password", sizeof(settings.Admin_PASSWORD));
-        strncpy(settings.WIFI_SSID, "HAL2001", sizeof(settings.WIFI_SSID));
+        strncpy(settings.WIFI_SSID, "HAL2000", sizeof(settings.WIFI_SSID));
         strncpy(settings.WIFI_PASSWORD, "quiettree081", sizeof(settings.WIFI_PASSWORD));
          //Default IP Address
          settings.IP_ADDRESS[0] = 192;
          settings.IP_ADDRESS[1] = 168;
          settings.IP_ADDRESS[2] = 10;
-         settings.IP_ADDRESS[3] = 200;
+         settings.IP_ADDRESS[3] = 99;
          //default IP Address
          settings.DNS[0] = 8;
          settings.DNS[1] = 8;
@@ -79,7 +79,7 @@ void PortManager::initializeDefaults() {
          settings.REFRESH_RATE = 300000;//every 5 mins
          strncpy(settings.SHARED_SECRET,  "12345678901234567890123456789012", sizeof(settings.SHARED_SECRET) - 1);
          settings.SHARED_SECRET[sizeof(settings.SHARED_SECRET) - 1] = '\0';
-         strncpy(settings.CALL_HOME_HOST,"192.168.10.199",sizeof(settings.CALL_HOME_HOST));
+         strncpy(settings.CALL_HOME_HOST,"192.168.10.100",sizeof(settings.CALL_HOME_HOST));
          settings.REGISTRATION_STATUS = false;
          // Initialize date fields
          settings.DATE_LAST_UPDATED = time(NULL);  
@@ -87,7 +87,11 @@ void PortManager::initializeDefaults() {
 
          //disable serial set to false
          settings.DISABLESERIAL = false;
-         settings.DISABLEWIFI = true;
+         settings.DISABLEWIFI = false;
+
+         settings.DISPLAY_STATUS = true;
+         //SET DEFAULT DISPLAY
+         strncpy(settings.DISPLAY_TEXT,  "Loading Defaults :)", sizeof(settings.DISPLAY_TEXT) - 1);
          
          //reset the log counters and log array
          settings.currentLogIndex = 0;
@@ -158,20 +162,20 @@ void PortManager::loadPortDefaults(){
          setPortValues(33,false,false,IO_WRITE_CH_PIN_10,IO_READ_CH_PIN_10,PROGRAMMABLE_IO,ONOFF,"PIO_10", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(34,false,false,IO_WRITE_CH_PIN_11,IO_READ_CH_PIN_11,PROGRAMMABLE_IO,ONOFF,"PIO_11", 0.00,0.00, currentTime,"INIT DEFAULT");
          
-         setPortValues(35,true,true,1,1,HMI,PULSE,"HMI TXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(35,false,false,1,1,HMI,PULSE,"HMI TXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(36,false,false,-1,-1,HMI,PULSE,"HMI TXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
         
         setPortValues(37,false,false,1,1,HMI,PULSE,"HMI RXP 485", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(38,true,false,-1,-1,HMI,PULSE,"HMI RXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(38,false,false,-1,-1,HMI,PULSE,"HMI RXN 485", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         setPortValues(39,false,false,1,1,HMI,PULSE,"Bus CANH", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(40,false,false,-1,-1,HMI,PULSE,"Bus CANL", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         //start of temp probe pins
-        setPortValues(41,true,false,0,0,PTEMP,CTEMP,"TMP TP-00", 0.00,0.00,currentTime,"INIT DEFAULT");
+        setPortValues(41,false,false,0,0,PTEMP,CTEMP,"TMP TP-00", 0.00,0.00,currentTime,"INIT DEFAULT");
 
         
-        setPortValues(42,true,true,1,1,PTEMP,CTEMP,"TMP TN-00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(42,false,false,1,1,PTEMP,CTEMP,"TMP TN-00", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(43,false,false,2,2,PTEMP,CTEMP,"TMP RTD-00", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         setPortValues(44,false,false,3,3,PTEMP,CTEMP,"TMP TP-01", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -184,7 +188,7 @@ void PortManager::loadPortDefaults(){
         //end temp probesIO_READ_CH_PIN_00
         
         //start of encoders pins
-        setPortValues(50,true,true,0,0,ENCODER,PULSE,"ENCODER A0", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(50,false,false,0,0,ENCODER,PULSE,"ENCODER A0", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(51,false,false,1,1,ENCODER,PULSE,"ENCODER B0", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(52,false,false,2,2,ENCODER,PULSE,"ENCODER Z0", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(53,false,false,3,3,ENCODER,PULSE,"ENCODER A1", 0.00,0.00, currentTime,"INIT DEFAULT");

@@ -12,7 +12,7 @@ Version: 1.0.0
 #include <vector>
 #include "LogManager.h"
 #include "PortManager.h"
-#include "NetworkManager.h"
+//#include "NetworkManager.h"
 #include "FlashAPILimits.h"
 
 #define MAX_HEAPS 5  //max number of heaps to display
@@ -22,7 +22,6 @@ extern int heapStatsIndex;  // Index for circular buffer
 
 // Function declarations for callbacks
 void allocateMemory();
-void checkNetwork();
 void checkSerialConnection();
 void checkMemory();
 void printHeapStatsHistory();

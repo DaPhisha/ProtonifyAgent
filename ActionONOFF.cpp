@@ -11,7 +11,7 @@ Version: 1.0.0
 
 // Constructor
 ActionONOFF::ActionONOFF(Ports* port, int priority, String msg)
-    : ActionObject(port, priority), msg(msg) {}
+    : ActionObject(port, priority, msg) {}
 
 // Override the init method
 void ActionONOFF::init() {

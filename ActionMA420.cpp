@@ -11,7 +11,7 @@ Version: 1.0.0
 
 // Constructor
 ActionMA420::ActionMA420(Ports* port, int priority, String msg)
-    : ActionObject(port, priority), msg(msg) {}
+    : ActionObject(port, priority, msg) {}
 
 // Override the init method
 void ActionMA420::init() {

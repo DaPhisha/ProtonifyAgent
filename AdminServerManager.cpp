@@ -124,6 +124,7 @@ void AdminServerManager::init() {
 
     if(PortManager::getInstance().settings.DISABLEWIFI == false){
       //setup wifi connection 
+      LOG("SETTING UP WIFI");
       WiFi.begin(PortManager::getInstance().settings.WIFI_SSID, PortManager::getInstance().settings.WIFI_PASSWORD);
        unsigned long startAttemptTime = millis();
       // Wait for connection attempt to complete
@@ -174,6 +175,8 @@ bool AdminServerManager::attemptWiFiReconnection() {
         LOG("WiFi server started. IP address: " + WiFi.localIP().toString());
         wifiServer.begin();
         m_serverWifiConnected = true;
+        //SET DEFAULT DISPLAY
+         strncpy(settings.DISPLAY_TEXT,  WiFi.localIP().toString(), sizeof(settings.DISPLAY_TEXT) - 1);
         return true;
     } else {
         m_serverWifiConnected = false;
@@ -252,6 +255,7 @@ void AdminServerManager::handleClientConnection(Client& client) {
                     }
 
                     if (currentLine.startsWith("Cookie: ")) {
+                        //LOG("FOUND COOKIE: " + currentLine);
                         int authTokenIndex = currentLine.indexOf("authToken=");
                         if (authTokenIndex != -1) {
                             int authTokenEnd = currentLine.indexOf(';', authTokenIndex);
@@ -543,6 +547,7 @@ void AdminServerManager::handleLogin(Client& client, const String& request,int c
         m_activeToken = generateRandomToken();
         m_tokenGenerationTime = millis();
         m_userMessage = "PASSED CREDENTIAL CHECK.";
+        LOG("Session Token Generated: " + m_activeToken);
         handleHomeLandingPage(client,request, "Welcome back " + m_userName);
     } else {
         m_userMessage = "LOGIN FAILED";
@@ -678,22 +683,26 @@ void AdminServerManager::handleClearLog(Client& client, const String& request, i
 
 
 void AdminServerManager::handleConsole(Client& client, const String& request,int contentLength, const String &authToken) {
+    LOG("Auth Token Console REQ: " + authToken);
     if(authToken != m_activeToken){
          handleError(client, 404, "Un-Authorized Access Request to /console");
          return;
     }
-  
+
     client.println("HTTP/1.1 200 OK");
-    client.println("Content-Type: text/html");
+    client.println("Content-type:text/html");
     client.println("Connection: close");
-    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;"); 
+    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/");
+    //client.println("Set-Cookie: foofoo=test; Path=/");
     client.println();
+
+
     client.println("<!DOCTYPE HTML>");
     client.println("<html lang='en'>");
-    client.print(ResourceHandler::getHeaderRefresh("Logger Console"));
+    client.print(ResourceHandler::getHeader("Logger Console"));
     client.println("<body>");
     client.print(ResourceHandler::getHeaderMenu());
-    client.print(ResourceHandler::getRefreshIntervalDropdown());
+    //client.print(ResourceHandler::getRefreshIntervalDropdown());
     client.println("<main class='main-content'>");
   
     String user_message = "Welcome to the console logger.";
@@ -721,10 +730,12 @@ void AdminServerManager::handleAdmin(Client& client, const String& request, int 
     }
 
     client.println("HTTP/1.1 200 OK");
-    client.println("Content-Type: text/html");
+    client.println("Content-type:text/html");
     client.println("Connection: close");
-    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;");
+    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/");
+    //client.println("Set-Cookie: foofoo=test; Path=/");
     client.println();
+
     client.println("<!DOCTYPE HTML>");
     client.println("<html lang='en'>");
     client.print(ResourceHandler::getHeader("Admin Settings"));
@@ -863,14 +874,14 @@ void AdminServerManager::handleAdmin(Client& client, const String& request, int 
 
 
 void AdminServerManager::handleHomeLandingPage(Client& client, const String& request, String user_message){
+    
     client.println("HTTP/1.1 200 OK");
-    client.println("Content-Type: text/html");
+    client.println("Content-type:text/html");
     client.println("Connection: close");
-    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None; "); 
+    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/");
+    //client.println("Set-Cookie: foofoo=test; Path=/");
     client.println();
-    client.println("<!DOCTYPE HTML>");
     client.println("<html lang='en'>");
-
     client.print(ResourceHandler::getHeader("Agent Dashboard"));
     client.println("<body>");
     client.print(ResourceHandler::getHeaderMenu());
@@ -1107,12 +1118,12 @@ void AdminServerManager::handlePortsPage(Client& client, const String& request, 
     }
 
     // Build port landing page
-    client.println("HTTP/1.1 200 OK");
-    client.println("Content-Type: text/html");
+   client.println("HTTP/1.1 200 OK");
+    client.println("Content-type:text/html");
     client.println("Connection: close");
-    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;"); // This sets the token as a cookie valid for 24 hours
+    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/");
+    //client.println("Set-Cookie: foofoo=test; Path=/");
     client.println();
-    client.println("<!DOCTYPE HTML>");
     client.println("<html lang='en'>");
     client.print(ResourceHandler::getHeader(pageTitle));
     client.println("<body>");
@@ -1204,11 +1215,12 @@ void AdminServerManager::handleAllActivePorts(Client& client, const String& requ
 
     // Build the All Active Ports page
     client.println("HTTP/1.1 200 OK");
-    client.println("Content-Type: text/html");
+    client.println("Content-type:text/html");
     client.println("Connection: close");
-    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;"); // Set the token as a cookie valid for 24 hours
+    client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/");
+    //client.println("Set-Cookie: foofoo=test; Path=/");
     client.println();
-    client.println("<!DOCTYPE HTML>");
+
     client.println("<html lang='en'>");
     client.print(ResourceHandler::getHeader("All Active Port Manager"));
     client.println("<body>");
@@ -1262,11 +1274,12 @@ if(authToken != m_activeToken){
         return;
     }
   client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: text/html");
+  client.println("Content-type:text/html");
   client.println("Connection: close");
-  client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;");
+  client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/");
+  //client.println("Set-Cookie: foofoo=test; Path=/");
   client.println();
-  client.println("<!DOCTYPE HTML>");
+
   client.println("<html lang='en'>");
   client.print(ResourceHandler::getHeader("Help"));
   client.println("<body>");
@@ -1284,11 +1297,12 @@ void AdminServerManager::handleDisplay(Client& client, const String& request, in
         return;
   }
   client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: text/html");
+  client.println("Content-type:text/html");
   client.println("Connection: close");
-  client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;"); 
+  client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/");
+  //client.println("Set-Cookie: foofoo=test; Path=/");
   client.println();
-  client.println("<!DOCTYPE HTML>");
+
   client.println("<html lang='en'>");
   client.print(ResourceHandler::getHeader("Display Manager"));
   client.println("<body>");
@@ -1312,7 +1326,8 @@ void AdminServerManager::processDislay(Client& client, const String& request, in
   }
   String message = "PROCESS DISPLAY POST";
   //extract the display text
-  String temp = extractValueFromPostData(request, "display-txt");
+
+  String temp = urlDecode(extractValueFromPostData(request, "display-txt"));
   strncpy(PortManager::getInstance().settings.DISPLAY_TEXT, temp.c_str(),MAX_DISPLAY);
 
   String displayToggle = extractValueFromPostData(request, "display-status");
@@ -1338,11 +1353,12 @@ void AdminServerManager::processDislay(Client& client, const String& request, in
   PortManager::getInstance().writeToFlash();
 
   client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: text/html");
+  client.println("Content-type:text/html");
   client.println("Connection: close");
-  client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/; Max-Age=86400; SameSite=None;"); 
+  client.println("Set-Cookie: authToken=" + m_activeToken + "; Path=/");
+  //client.println("Set-Cookie: foofoo=test; Path=/");
   client.println();
-  client.println("<!DOCTYPE HTML>");
+
   client.println("<html lang='en'>");
   client.print(ResourceHandler::getHeader("Display Manager"));
   client.println("<body>");

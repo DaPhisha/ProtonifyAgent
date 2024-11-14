@@ -72,15 +72,6 @@ void writeSettingsToFlash(){
     PortManager::getInstance().writeToFlash();
 }
 
-
-void checkNetwork() {
-    // Example function that checks network status
-
-    if (!NetworkManager::getInstance().checkNetworkConnection()) {
-        LOG("******************Network check failed, trying to reconnect...");
-    }
-}
-
 void checkSerialConnection() {
     // Example function that checks the serial connection status
     LogManager::getInstance().writeLog("Checking serial bus...");

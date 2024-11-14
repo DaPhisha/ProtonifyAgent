@@ -29,13 +29,14 @@ Define port logic rules on what ports can be assigned which circuit types.  CRIT
 #include "EventScheduler.h"
 #include "TaskCallbacks.h"
 #include "PortManager.h"
-#include "NetworkManager.h"
+//#include "NetworkManager.h"
 #include "AdminServerManager.h"
 #include "ActionQueue.h"
 #include "ActionTest.h"
 #include "ActionONOFF.h"
 #include "ActionMA420.h"
 #include "ActionCTEMP.h"
+#include "ActionDisplay.h"
 #define MAX_EVENTS 10  // Maximum number of scheduled events
 #define MASTER_DEBUG true
 
@@ -107,7 +108,8 @@ void loop() {
             */
             //Populate Queue
             populateActionQueue();
-            //Prioritize queue by highest priority value (highest to lowest)
+            //Prioritize queue by highest priority value (highest to lowest
+
              actionQueue.sortActions(); 
             //Execute Action Queue
             actionQueue.executeActions();
@@ -159,6 +161,7 @@ void shutdown() {
 //function that iterates through the current active port types and assigns and action to it.
 void populateActionQueue() {
 
+  
   PortManager& portManager = PortManager::getInstance();
     for (int i = 0; i < MAX_PORTS; ++i) {
         Ports& port = portManager.settings.ports[i];
@@ -198,15 +201,13 @@ void populateActionQueue() {
             }
         }
     }
+    //Add last action for Display
+
+    if(portManager.settings.DISPLAY_STATUS == true){
+       ActionObject* action2 = new ActionDisplay(NULL,1, String(portManager.settings.DISPLAY_TEXT));
+       actionQueue.addAction(action2); 
+    }
 }
-
-
-
-
-
-
-
-
 
 //https://docs.arduino.cc/tutorials/portenta-machine-control/user-manual/
 void updatePort(Ports& port) {

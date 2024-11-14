@@ -16,7 +16,7 @@ Version: 1.0.0
 // Derived class for testing actions
 class ActionONOFF : public ActionObject {
 private:
-    String msg;  // Message to display
+    //String msg;  // Message to display
 
 public:
     // Constructor to initialize with a port, priority, and message

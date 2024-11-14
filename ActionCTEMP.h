@@ -16,7 +16,7 @@ Version: 1.0.0
 // Derived class for handling CTEMP actions
 class ActionCTEMP : public ActionObject {
 private:
-    String msg;  // Custom message to be used in logging
+   // String msg;  // Custom message to be used in logging
 
 public:
     // Constructor to initialize with a port, priority, and message
