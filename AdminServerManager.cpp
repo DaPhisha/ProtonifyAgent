@@ -1,4 +1,4 @@
-#include "Ethernet.h"
+//#include "Ethernet.h"
 /*
   File: AdminServerManager.cpp
   Date Created: May 11, 2024
@@ -8,6 +8,7 @@
   Version 2.0.0
 */
 #include "AdminServerManager.h"
+//#include "PortManager.h"
 #include "WiFiClient.h"
 #include <cstddef>
 #include <regex>
@@ -176,7 +177,7 @@ bool AdminServerManager::attemptWiFiReconnection() {
         wifiServer.begin();
         m_serverWifiConnected = true;
         //SET DEFAULT DISPLAY
-         strncpy(settings.DISPLAY_TEXT,  WiFi.localIP().toString(), sizeof(settings.DISPLAY_TEXT) - 1);
+ //       strncpy(PortManager::getInstance().settings.DISPLAY_TEXT,  WiFi.localIP().toString(), sizeof(settings.DISPLAY_TEXT) - 1);
         return true;
     } else {
         m_serverWifiConnected = false;

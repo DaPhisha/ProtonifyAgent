@@ -10,7 +10,7 @@
 #pragma once
 #include <Arduino.h>
 #include <SPI.h>
-#include <Ethernet.h>
+//#include <Ethernet.h>
 #include <EthernetSSLClient.h>
 #include <PortentaEthernet.h>
 #include <WiFi.h>

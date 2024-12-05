@@ -41,8 +41,11 @@ void PortManager::initializeDefaults() {
         strncpy(settings.Admin_USERNAME, "admin", sizeof(settings.Admin_USERNAME));
         //set default password
         strncpy(settings.Admin_PASSWORD, "password", sizeof(settings.Admin_PASSWORD));
-        strncpy(settings.WIFI_SSID, "HAL2000", sizeof(settings.WIFI_SSID));
-        strncpy(settings.WIFI_PASSWORD, "quiettree081", sizeof(settings.WIFI_PASSWORD));
+        //strncpy(settings.WIFI_SSID, "HAL2000", sizeof(settings.WIFI_SSID));
+        //strncpy(settings.WIFI_PASSWORD, "quiettree081", sizeof(settings.WIFI_PASSWORD));
+        strncpy(settings.WIFI_SSID, "ArduinoNetwork", sizeof(settings.WIFI_SSID));
+        strncpy(settings.WIFI_PASSWORD, "hotdogtimemachine!69", sizeof(settings.WIFI_PASSWORD));
+
          //Default IP Address
          settings.IP_ADDRESS[0] = 192;
          settings.IP_ADDRESS[1] = 168;
@@ -74,7 +77,7 @@ void PortManager::initializeDefaults() {
          settings.MAC[5] = 0xED;
          
          strncpy(settings.DESCRIPTION, "Portenta H7 DEV",sizeof(settings.DESCRIPTION));
-         strncpy(settings.SERIAL_NUMBER, "002A00453130510B31353431", sizeof(settings.SERIAL_NUMBER));
+         strncpy(settings.SERIAL_NUMBER, "004400373132511539313731", sizeof(settings.SERIAL_NUMBER));
          strncpy(settings.MODEL, "PORTENTA", sizeof(settings.MODEL));
          settings.REFRESH_RATE = 300000;//every 5 mins
          strncpy(settings.SHARED_SECRET,  "12345678901234567890123456789012", sizeof(settings.SHARED_SECRET) - 1);
