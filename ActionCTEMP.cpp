@@ -29,30 +29,35 @@ void ActionCTEMP::init() {
 // Override the execute method
 void ActionCTEMP::execute() {
     if (port != nullptr) {
-        LOG("ActionCTEMP - Port SIMULATED: " + String(port->pinDescription) + " PRI: " + String(priority) + " MSG: " + msg);
 
-        port->lastReading = port->currentReading;
+      if(port->isSimulated == true){
+           //LOG("ActionCTEMP - Port SIMULATED: " + String(port->pinDescription) + " PRI: " + String(priority) + " MSG: " + msg);
 
-        // Enhanced temperature simulation: Add a small random change to simulate real-world fluctuations
-        int tempChange = random(-5, 6);  // Small change between -5 and 5
-        port->currentReading += tempChange;
+            port->lastReading = port->currentReading;
 
-        // Ensure the simulated temperature stays within a realistic range
-        if (port->currentReading < -40) {
-            port->currentReading = -40;  // Lower limit
-        } else if (port->currentReading > 100) {
-            port->currentReading = 100;  // Upper limit
+            // Enhanced temperature simulation: Add a small random change to simulate real-world fluctuations
+            int tempChange = random(-5, 6);  // Small change between -5 and 5
+            port->currentReading += tempChange;
+
+            // Ensure the simulated temperature stays within a realistic range
+            if (port->currentReading < -40) {
+                port->currentReading = -40;  // Lower limit
+            } else if (port->currentReading > 100) {
+                port->currentReading = 100;  // Upper limit
+            }
+
+            // Determine the state based on the last and current readings
+            if (port->lastReading < port->currentReading) {
+                strcpy(port->state, "Warming");
+            } else if (port->lastReading > port->currentReading) {
+                strcpy(port->state, "Cooling");
+            } else {
+                strcpy(port->state, "Constant");
+            }
+            port->lastUpdated = LogManager::getInstance().getCurrentTime();
+            return;
         }
-
-        // Determine the state based on the last and current readings
-        if (port->lastReading < port->currentReading) {
-            strcpy(port->state, "Warming");
-        } else if (port->lastReading > port->currentReading) {
-            strcpy(port->state, "Cooling");
-        } else {
-            strcpy(port->state, "Constant");
-        }
-
+        //LOG("ActionCTEMP - Port ACTUAL- NOT IMPLEMENTED: " + String(port->pinDescription) + " PRI: " + String(priority) + " MSG: " + msg);
         port->lastUpdated = LogManager::getInstance().getCurrentTime();
     }
 }

@@ -177,7 +177,7 @@ bool AdminServerManager::attemptWiFiReconnection() {
         wifiServer.begin();
         m_serverWifiConnected = true;
         //SET DEFAULT DISPLAY
- //       strncpy(PortManager::getInstance().settings.DISPLAY_TEXT,  WiFi.localIP().toString(), sizeof(settings.DISPLAY_TEXT) - 1);
+        //strncpy(PortManager::getInstance().settings.DISPLAY_TEXT,  WiFi.localIP().toString(), sizeof(PortManager::getInstance()settings.DISPLAY_TEXT) - 1);
         return true;
     } else {
         m_serverWifiConnected = false;
@@ -963,7 +963,10 @@ void AdminServerManager::handlePortUpdate(Client& client, const String& request,
 
     Ports& port = PortManager::getInstance().settings.ports[portIndex];
     String circuitTypeStr = extractValueFromPostData(request, "circuitType");
+    LOG("CIRCUIT STRING TYPE= " + circuitTypeStr);
     if (circuitTypeStr == "ONOFF") port.circuitType = ONOFF;
+    else if (circuitTypeStr == "ON24V") port.circuitType = ON24V;
+    else if (circuitTypeStr == "OFF24V") port.circuitType = OFF24V;
     else if (circuitTypeStr == "MA420") port.circuitType = MA420;
     else if (circuitTypeStr == "CTEMP") port.circuitType = CTEMP;
     else if (circuitTypeStr == "VALVE") port.circuitType = VALVE;

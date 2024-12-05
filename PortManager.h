@@ -4,6 +4,39 @@ Date Created: April 29, 2024
 Authors: DaPhisha
 Description: Defines the PortManager class which manages an array of Port objects. It handles loading and saving port configurations to flash memory, and ensures robust memory management and error handling.
 Version: 1.0.0
+
+#include <Arduino_PortentaMachineControl.h>
+int sensorPin = 0;   // select the input pin for the potentiometer
+//int ledPin = 13;      // select the pin for the LED
+///int sensorValue = 0;  // variable to store the value coming from the sensor
+
+void setup() {
+  // declare the ledPin as an OUTPUT:
+  unsigned long startTime = millis();
+  
+  while (!Serial && (millis() - startTime < 5000)) {
+          delay(100);
+      }
+  if (Serial) {
+        Serial.println("CONNECTED");
+  }
+  MachineControl_AnalogOut.begin();
+}
+
+void loop() {
+  Serial.println("Sending 10V");
+  MachineControl_AnalogOut.write(sensorPin,255);
+  delay(3000);
+
+  Serial.println("Sending 0V");
+  MachineControl_AnalogOut.write(sensorPin,0);
+}
+
+
+
+
+
+
 */
 
 #ifndef PORT_MANAGER_H
@@ -28,10 +61,10 @@ constexpr int MAX_STATE_TXT = 32;
 //*******************************************************************
 //*******************************************************************
 //*******************************************************************
-const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH12042024";
+const char DATA_SIGNATURE[MAX_SIGNATURE] = "DAPHISH12082024";
 
 enum CIRCUIT_TYPE {
-    NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, FLOW, CIRCUIT_TYPE_COUNT
+    NOT_ASSIGNED, ONOFF, MA420, CTEMP, VALVE, FILL, PULSE, FLOW, ON24V, OFF24V, CIRCUIT_TYPE_COUNT
 };
 
 enum PIN_TYPE {

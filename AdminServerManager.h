@@ -18,7 +18,6 @@
 #include "PortManager.h"
 #include "LogManager.h"
 #include "FlashAPILimits.h"
-//#include "NetworkManager.h"
 #include "ResourceHandler.h"
 #define TOKEN_LENGTH 32 
 #define HTTP_SERVER_PORT 80

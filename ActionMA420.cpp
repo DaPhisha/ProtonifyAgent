@@ -24,23 +24,27 @@ void ActionMA420::execute() {
     if (port != nullptr) {
 
         //ADD VALIDATION CODE BASED ON THE PORT TYPE
-        LOG("ActionMA420 - Port SIMULATED: " + String(port->pinDescription) + " PRI: " + String(priority) + " MSG: " + msg);
+        if(port->isSimulated == true){
+            //LOG("ActionMA420 - Port SIMULATED: " + String(port->pinDescription) + " PRI: " + String(priority) + " MSG: " + msg);
 
-        port->lastReading = port->currentReading;
+            port->lastReading = port->currentReading;
 
-        // Simulation code for MA420 (e.g., simulating current levels in 4-20mA range)
-        int randomValue = random(0, 3);  // Generate a random number between 0 and 2
-        if (randomValue == 0) {
-            port->currentReading = 0;
-            strcpy(port->state, String("No Signal").c_str());
-        } else if (randomValue == 1) {
-            port->currentReading = 4;
-            strcpy(port->state, String("4 mA").c_str());
-        } else {
-            port->currentReading = 20;
-            strcpy(port->state, String("20 mA").c_str());
+            // Simulation code for MA420 (e.g., simulating current levels in 4-20mA range)
+            int randomValue = random(0, 3);  // Generate a random number between 0 and 2
+            if (randomValue == 0) {
+                port->currentReading = 0;
+                strcpy(port->state, String("No Signal").c_str());
+            } else if (randomValue == 1) {
+                port->currentReading = 4;
+                strcpy(port->state, String("4 mA").c_str());
+            } else {
+                port->currentReading = 20;
+                strcpy(port->state, String("20 mA").c_str());
+            }
+            port->lastUpdated = LogManager::getInstance().getCurrentTime(); 
+            return;
         }
-
+        //LOG("ActionMA420 - Port ACTUAL NOT IMPLEMETED: " + String(port->pinDescription) + " PRI: " + String(priority) + " MSG: " + msg);
         port->lastUpdated = LogManager::getInstance().getCurrentTime(); 
     }
 }

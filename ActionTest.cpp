@@ -26,8 +26,13 @@ void ActionTest::execute() {
         // int value = digitalRead(port->readPinNumber);
         // port->currentReading = value;
         // Serial.println("Read Digital Pin: " + String(port->readPinNumber) + " Value: " + String(value));
-        LOG("ActionTest - Port Assigned: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
-        port->lastUpdated = LogManager::getInstance().getCurrentTime(); 
+        if(port->isSimulated == true){
+          //LOG("ActionTest - Port SIMULATED: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
+          port->lastUpdated = LogManager::getInstance().getCurrentTime();
+          return;
+        }
+        //LOG("ActionTest - Port ACTUAL: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
+        port->lastUpdated = LogManager::getInstance().getCurrentTime();
     }
 }
 

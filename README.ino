@@ -139,7 +139,6 @@ Initialization
     LogManager: Initializes the logging mechanism.
     EventScheduler: Registers and schedules periodic tasks.
     PortManager: Loads or initializes port configurations.
-    NetworkManager: Sets up network interfaces.
     AdminServerManager: Initializes the web server and defines routes.
 
 Main Loop

@@ -41,10 +41,10 @@ void PortManager::initializeDefaults() {
         strncpy(settings.Admin_USERNAME, "admin", sizeof(settings.Admin_USERNAME));
         //set default password
         strncpy(settings.Admin_PASSWORD, "password", sizeof(settings.Admin_PASSWORD));
-        //strncpy(settings.WIFI_SSID, "HAL2000", sizeof(settings.WIFI_SSID));
-        //strncpy(settings.WIFI_PASSWORD, "quiettree081", sizeof(settings.WIFI_PASSWORD));
-        strncpy(settings.WIFI_SSID, "ArduinoNetwork", sizeof(settings.WIFI_SSID));
-        strncpy(settings.WIFI_PASSWORD, "hotdogtimemachine!69", sizeof(settings.WIFI_PASSWORD));
+        strncpy(settings.WIFI_SSID, "HAL2000", sizeof(settings.WIFI_SSID));
+        strncpy(settings.WIFI_PASSWORD, "quiettree081", sizeof(settings.WIFI_PASSWORD));
+        //strncpy(settings.WIFI_SSID, "ArduinoNetwork", sizeof(settings.WIFI_SSID));
+        //strncpy(settings.WIFI_PASSWORD, "hotdogtimemachine!69", sizeof(settings.WIFI_PASSWORD));
 
          //Default IP Address
          settings.IP_ADDRESS[0] = 192;
@@ -92,7 +92,7 @@ void PortManager::initializeDefaults() {
          settings.DISABLESERIAL = false;
          settings.DISABLEWIFI = false;
 
-         settings.DISPLAY_STATUS = true;
+         settings.DISPLAY_STATUS = false;
          //SET DEFAULT DISPLAY
          strncpy(settings.DISPLAY_TEXT,  "Loading Defaults :)", sizeof(settings.DISPLAY_TEXT) - 1);
          
@@ -122,16 +122,16 @@ void PortManager::loadPortDefaults(){
 
         //Array value is the port number
         //start of analog pins
-        setPortValues(0,true,true,0,-1,ANALOG_INPUT,ONOFF,"PIN AI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(0,false,false,0,-1,ANALOG_INPUT,ONOFF,"PIN AI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(1,false,false,1,-1,ANALOG_INPUT,MA420,"PIN AI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(2,false,false,2,-1,ANALOG_INPUT,CTEMP,"PIN AI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(3,true,true,-1,0,ANALOG_OUTPUT,CTEMP,"PIN AO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(4,false,false,-1,1,ANALOG_OUTPUT,VALVE,"PIN AO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(5,true,true,-1,2,ANALOG_OUTPUT,FILL,"PIN AO_02", 0.00,0.00,currentTime,"INIT DEFAULT");
-        setPortValues(6,false,false,-1,3,ANALOG_OUTPUT,PULSE,"PIN AO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(3,true,false,-1,0,ANALOG_OUTPUT,OFF24V,"PIN AO_00",0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(4,false,false,-1,1,ANALOG_OUTPUT,OFF24V,"PIN AO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(5,false,false,-1,2,ANALOG_OUTPUT,OFF24V,"PIN AO_02", 0.00,0.00,currentTime,"INIT DEFAULT");
+        setPortValues(6,false,false,-1,3,ANALOG_OUTPUT,OFF24V,"PIN AO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         //start of digital input pins 0-7
-        setPortValues(7,true,false,DIN_READ_CH_PIN_00,-1,DIGITAL_INPUT,FLOW,"DI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(7,false,false,DIN_READ_CH_PIN_00,-1,DIGITAL_INPUT,FLOW,"DI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(8,false,false,DIN_READ_CH_PIN_01,-1,DIGITAL_INPUT,MA420,"DI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(9,false,false,DIN_READ_CH_PIN_02,-1,DIGITAL_INPUT,NOT_ASSIGNED,"DI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(10,false,false,DIN_READ_CH_PIN_03,-1,DIGITAL_INPUT,CTEMP,"DI_03", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -141,7 +141,7 @@ void PortManager::loadPortDefaults(){
         setPortValues(14,false,false,DIN_READ_CH_PIN_07,-1,DIGITAL_INPUT,PULSE,"DI_07", 0.00,0.00, currentTime,"INIT DEFAULT");
         //end of digital input pins
          //start of digital output pins 15-22
-         setPortValues(15,true,true,-1,0,DIGITAL_OUTPUT,ONOFF,"DO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(15,false,false,-1,0,DIGITAL_OUTPUT,ONOFF,"DO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(16,false,false,-1,1,DIGITAL_OUTPUT,ONOFF,"DO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(17,false,false,-1,2,DIGITAL_OUTPUT,ONOFF,"DO_02", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(18,false,false,-1,3,DIGITAL_OUTPUT,ONOFF,"DO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -152,7 +152,7 @@ void PortManager::loadPortDefaults(){
          //end of the digital output pins
 
          //start of 12 digital PROGRAMMABLE_IO pins
-         setPortValues(23,true,true,IO_WRITE_CH_PIN_00,IO_READ_CH_PIN_00,PROGRAMMABLE_IO,ONOFF,"PIO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(23,false,false,IO_WRITE_CH_PIN_00,IO_READ_CH_PIN_00,PROGRAMMABLE_IO,ONOFF,"PIO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(24,false,false,IO_WRITE_CH_PIN_01,IO_READ_CH_PIN_01,PROGRAMMABLE_IO,ONOFF,"PIO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(25,false,false,IO_WRITE_CH_PIN_02,IO_READ_CH_PIN_02,PROGRAMMABLE_IO,ONOFF,"PIO_02", 0.00,0.00, currentTime,"INIT DEFAULT");
          setPortValues(26,false,false,IO_WRITE_CH_PIN_03,IO_READ_CH_PIN_03,PROGRAMMABLE_IO,ONOFF,"PIO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -373,6 +373,8 @@ String PortManager::circuitTypeToString(CIRCUIT_TYPE type){
   switch (type) {
         case NOT_ASSIGNED: return "ON OFF 0-24V";
         case ONOFF: return "ON OFF 0-24V";
+        case ON24V: return "ON 24V";
+        case OFF24V: return "OFF 24V";
         case MA420: return "4-20 mA";
         case CTEMP: return "Temperature";
         case VALVE: return "Valve Reading";
@@ -387,6 +389,8 @@ String PortManager::circuitTypeToCode(CIRCUIT_TYPE type){
   switch (type) {
         case NOT_ASSIGNED: return "not_assigned";
         case ONOFF: return "ONOFF";
+        case ON24V: return "ON24V";
+        case OFF24V: return "OFF24V";
         case MA420: return "MA420";
         case CTEMP: return "CTEMP";
         case VALVE: return "VALVE";

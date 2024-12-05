@@ -2,7 +2,7 @@
 File: Protonify Agent 2.0.0 ActionMA420.h File for IDE 2.3.2
 Date Created: Sept 5 29, 2024
 Authors: DaPhisha
-Description: ONOFF Action Object 
+Description: MA420 Action Object 
 Version: 1.0.0
 */
 // ActionMA420.h

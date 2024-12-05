@@ -724,6 +724,8 @@ if (window.location.pathname.startsWith('/ports')) {
                     <form action='/ports/update' method='POST'>
                         <label for='circuitType'>Circuit Type</label>
                         <select id='circuitType' name='circuitType'>
+                            <option value='ON24V' ${port.circuitType === 'ON24V' ? 'selected' : ''}>ON24V</option>
+                            <option value='OFF24V' ${port.circuitType === 'OFF24V' ? 'selected' : ''}>OFF24V</option>
                             <option value='ONOFF' ${port.circuitType === 'ONOFF' ? 'selected' : ''}>ONOFF</option>
                             <option value='MA420' ${port.circuitType === 'MA420' ? 'selected' : ''}>MA420</option>
                             <option value='CTEMP' ${port.circuitType === 'CTEMP' ? 'selected' : ''}>CTEMP</option>

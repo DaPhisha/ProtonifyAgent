@@ -20,7 +20,7 @@ void ActionDisplay::init() {
 
 // Override the execute method
 void ActionDisplay::execute() {
-  LOG("ActionDisplay: PRI: " + String(priority) + " MSG: " + msg);
+  //LOG("ActionDisplay: PRI: " + String(priority) + " MSG: " + msg);
 }
 
 // Override the stop method

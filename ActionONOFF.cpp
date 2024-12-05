@@ -24,23 +24,27 @@ void ActionONOFF::execute() {
     if (port != nullptr) {
         // Example logic for reading a digital pin
         //ADD VALIDATION CODE BASED ON THE PORT TYPE
-        // int value = digitalRead(port->readPinNumber);
-        // port->currentReading = value;
         
-        LOG("ActionTest - Port SIMULATED: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
-        port->lastReading = port->currentReading;
+        if(port->isSimulated == true){
+            
+            port->lastReading = port->currentReading;
+            
+            //SIMULATION CODE
+            port->currentReading = port->currentReading == 0 ? 1 : 0;
+
+            if(port->currentReading == 0){
+
+              strcpy(port->state, String("OFF").c_str());
         
-        //SIMULATION CODE
-        port->currentReading = port->currentReading == 0 ? 1 : 0;
-
-        if(port->currentReading == 0){
-
-          strcpy(port->state, String("OFF").c_str());
-    
-        }else{
-          strcpy(port->state, String("ON").c_str());
+            }else{
+              strcpy(port->state, String("ON").c_str());
+            }
+            //LOG("ActionTest - Port SIMULATED: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
+            port->lastUpdated = LogManager::getInstance().getCurrentTime();
+            return;
         }
-        port->lastUpdated = LogManager::getInstance().getCurrentTime(); 
+        //LOG("ActionONOFF - Port ACTUAL NOT IMPLEMENTED: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
+        port->lastUpdated = LogManager::getInstance().getCurrentTime();
     }
 }
 
