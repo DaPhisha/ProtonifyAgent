@@ -23,21 +23,27 @@ void ActionON24V::init() {
 void ActionON24V::execute() {
     if (port != nullptr) {
 
+        if(port->currentReading == 1){
+          //do nothing as its already on
+          return;
+        }
         if(port->isSimulated == true){
-            port->lastReading = port->currentReading;
+            port->currentReading = 1;
             strcpy(port->state, String("ON").c_str());
             port->lastUpdated = LogManager::getInstance().getCurrentTime(); 
-            //LOG("ActionON24V - Port SIMULATED: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
+            LOG("ActionON24V - Port SIMULATED: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
             port->lastUpdated = LogManager::getInstance().getCurrentTime(); 
             return;
         }
-
+        
+        //else turn it on
+        port->lastReading = 0;
         // Example logic for reading a digital pin
         //ADD VALIDATION CODE BASED ON THE PORT TYPE
-        analogWrite(port->writePinNumber, 255);
+        MachineControl_DigitalOutputs.write(port->writePinNumber, HIGH);
         strcpy(port->state, String("ON").c_str());
-        port->lastReading = port->currentReading;
-        //LOG("ActionON24V - Port ACTUAL SENDING 10V: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
+        port->currentReading = 1;
+        LOG("ActionON24V - Port ACTUAL SENDING 10V: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
         port->lastUpdated = LogManager::getInstance().getCurrentTime(); 
     }
 }

@@ -31,7 +31,7 @@ void ActionTest::execute() {
           port->lastUpdated = LogManager::getInstance().getCurrentTime();
           return;
         }
-        //LOG("ActionTest - Port ACTUAL: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
+        LOG("ActionTest - Port TEST: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
         port->lastUpdated = LogManager::getInstance().getCurrentTime();
     }
 }

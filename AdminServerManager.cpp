@@ -963,10 +963,12 @@ void AdminServerManager::handlePortUpdate(Client& client, const String& request,
 
     Ports& port = PortManager::getInstance().settings.ports[portIndex];
     String circuitTypeStr = extractValueFromPostData(request, "circuitType");
-    LOG("CIRCUIT STRING TYPE= " + circuitTypeStr);
+    //LOG("CIRCUIT STRING TYPE= " + circuitTypeStr);
     if (circuitTypeStr == "ONOFF") port.circuitType = ONOFF;
     else if (circuitTypeStr == "ON24V") port.circuitType = ON24V;
     else if (circuitTypeStr == "OFF24V") port.circuitType = OFF24V;
+    else if (circuitTypeStr == "ON10V") port.circuitType = ON10V;
+    else if (circuitTypeStr == "OFF10V") port.circuitType = OFF10V;
     else if (circuitTypeStr == "MA420") port.circuitType = MA420;
     else if (circuitTypeStr == "CTEMP") port.circuitType = CTEMP;
     else if (circuitTypeStr == "VALVE") port.circuitType = VALVE;
@@ -1034,7 +1036,8 @@ void AdminServerManager::handlePortUpdate(Client& client, const String& request,
 
     // Save the updated settings to flash or other persistent storage
     PortManager::getInstance().writeToFlash();
-    LOG("Port settings validated and written to flash.");
+    PortManager::getInstance().m_loopCounter = PortManager::getInstance().settings.REFRESH_RATE;
+    //LOG("Port settings validated and written to flash.");
     sendSuccessResponse(client, "SUCCESS: Port " + pinDescription + " updated!");
 }
 

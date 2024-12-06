@@ -31,7 +31,7 @@ void ActionCTEMP::execute() {
     if (port != nullptr) {
 
       if(port->isSimulated == true){
-           //LOG("ActionCTEMP - Port SIMULATED: " + String(port->pinDescription) + " PRI: " + String(priority) + " MSG: " + msg);
+           LOG("ActionCTEMP - Port SIMULATED: " + String(port->pinDescription) + " PRI: " + String(priority) + " MSG: " + msg);
 
             port->lastReading = port->currentReading;
 
@@ -57,7 +57,7 @@ void ActionCTEMP::execute() {
             port->lastUpdated = LogManager::getInstance().getCurrentTime();
             return;
         }
-        //LOG("ActionCTEMP - Port ACTUAL- NOT IMPLEMENTED: " + String(port->pinDescription) + " PRI: " + String(priority) + " MSG: " + msg);
+        LOG("ActionCTEMP - Port ACTUAL- NOT IMPLEMENTED: " + String(port->pinDescription) + " PRI: " + String(priority) + " MSG: " + msg);
         port->lastUpdated = LogManager::getInstance().getCurrentTime();
     }
 }

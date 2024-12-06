@@ -10,6 +10,7 @@ Version: 1.0.0
 #define ACTION_OBJECT_H
 
 #include "PortManager.h"  // Include PortManager to access the Port data
+#include <Arduino_PortentaMachineControl.h>
 
 // Base class for all action objects
 class ActionObject {

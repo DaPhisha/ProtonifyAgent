@@ -44,8 +44,8 @@ void ActionMA420::execute() {
             port->lastUpdated = LogManager::getInstance().getCurrentTime(); 
             return;
         }
-        //LOG("ActionMA420 - Port ACTUAL NOT IMPLEMETED: " + String(port->pinDescription) + " PRI: " + String(priority) + " MSG: " + msg);
-        port->lastUpdated = LogManager::getInstance().getCurrentTime(); 
+        LOG("ActionMA420 - Port ACTUAL NOT IMPLEMETED: " + String(port->pinDescription) + " PRI: " + String(priority) + " MSG: " + msg);
+        //port->lastUpdated = LogManager::getInstance().getCurrentTime(); 
     }
 }
 

@@ -5,16 +5,19 @@ Date Created: April 29, 2024
 Authors: DaPhisha
 Description: Implementation of the PortManager class which handles the lifecycle and state management of Port objects, including interactions with flash memory for persistence.
 Version: 1.0.0
+https://docs.arduino.cc/tutorials/portenta-machine-control/user-manual/
 */
 
 #include "PortManager.h"
 #include "LogManager.h"
+
 #include <sstream>
 #include <iomanip> // for std::setw
 #include <cstring>
 
 PortManager::PortManager(){
   isInitialized = false;
+  m_loopCounter = 0;
 }
 void PortManager::init() {
     if (!loadFromFlash()) {
@@ -32,6 +35,7 @@ PortManager& PortManager::getInstance() {
 PortManager::~PortManager() {
     //assum we should write the current DB to flash but maybe not 
     //writeToFlash();
+    //MachineControl_AnalogOut.
 }
 
 void PortManager::initializeDefaults() {
@@ -125,10 +129,10 @@ void PortManager::loadPortDefaults(){
         setPortValues(0,false,false,0,-1,ANALOG_INPUT,ONOFF,"PIN AI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(1,false,false,1,-1,ANALOG_INPUT,MA420,"PIN AI_01", 0.00,0.00, currentTime,"INIT DEFAULT");
         setPortValues(2,false,false,2,-1,ANALOG_INPUT,CTEMP,"PIN AI_02", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(3,true,false,-1,0,ANALOG_OUTPUT,OFF24V,"PIN AO_00",0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(4,false,false,-1,1,ANALOG_OUTPUT,OFF24V,"PIN AO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
-        setPortValues(5,false,false,-1,2,ANALOG_OUTPUT,OFF24V,"PIN AO_02", 0.00,0.00,currentTime,"INIT DEFAULT");
-        setPortValues(6,false,false,-1,3,ANALOG_OUTPUT,OFF24V,"PIN AO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(3,true,false,-1,0,ANALOG_OUTPUT,OFF10V,"PIN AO_00",0.00,0.00, currentTime,"OFF");
+        setPortValues(4,false,false,-1,1,ANALOG_OUTPUT,OFF10V,"PIN AO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+        setPortValues(5,false,false,-1,2,ANALOG_OUTPUT,OFF10V,"PIN AO_02", 0.00,0.00,currentTime,"INIT DEFAULT");
+        setPortValues(6,false,false,-1,3,ANALOG_OUTPUT,OFF10V,"PIN AO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
 
         //start of digital input pins 0-7
         setPortValues(7,false,false,DIN_READ_CH_PIN_00,-1,DIGITAL_INPUT,FLOW,"DI_00", 0.00,0.00, currentTime,"INIT DEFAULT");
@@ -141,14 +145,14 @@ void PortManager::loadPortDefaults(){
         setPortValues(14,false,false,DIN_READ_CH_PIN_07,-1,DIGITAL_INPUT,PULSE,"DI_07", 0.00,0.00, currentTime,"INIT DEFAULT");
         //end of digital input pins
          //start of digital output pins 15-22
-         setPortValues(15,false,false,-1,0,DIGITAL_OUTPUT,ONOFF,"DO_00", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(16,false,false,-1,1,DIGITAL_OUTPUT,ONOFF,"DO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(17,false,false,-1,2,DIGITAL_OUTPUT,ONOFF,"DO_02", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(18,false,false,-1,3,DIGITAL_OUTPUT,ONOFF,"DO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(19,false,false,-1,4,DIGITAL_OUTPUT,ONOFF,"DO_04", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(20,false,false,-1,5,DIGITAL_OUTPUT,ONOFF,"DO_05", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(21,false,false,-1,6,DIGITAL_OUTPUT,ONOFF,"DO_06", 0.00,0.00, currentTime,"INIT DEFAULT");
-         setPortValues(22,false,false,-1,7,DIGITAL_OUTPUT,ONOFF,"DO_07", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(15,true,false,-1,0,DIGITAL_OUTPUT,OFF24V,"DO_00", 0.00,0.00, currentTime,"OFF");
+         setPortValues(16,false,false,-1,1,DIGITAL_OUTPUT,OFF24V,"DO_01", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(17,false,false,-1,2,DIGITAL_OUTPUT,OFF24V,"DO_02", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(18,false,false,-1,3,DIGITAL_OUTPUT,OFF24V,"DO_03", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(19,false,false,-1,4,DIGITAL_OUTPUT,OFF24V,"DO_04", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(20,false,false,-1,5,DIGITAL_OUTPUT,OFF24V,"DO_05", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(21,false,false,-1,6,DIGITAL_OUTPUT,OFF24V,"DO_06", 0.00,0.00, currentTime,"INIT DEFAULT");
+         setPortValues(22,false,false,-1,7,DIGITAL_OUTPUT,OFF24V,"DO_07", 0.00,0.00, currentTime,"INIT DEFAULT");
          //end of the digital output pins
 
          //start of 12 digital PROGRAMMABLE_IO pins
@@ -375,6 +379,8 @@ String PortManager::circuitTypeToString(CIRCUIT_TYPE type){
         case ONOFF: return "ON OFF 0-24V";
         case ON24V: return "ON 24V";
         case OFF24V: return "OFF 24V";
+        case ON10V: return "ON 10V";
+        case OFF10V: return "OFF 10V";
         case MA420: return "4-20 mA";
         case CTEMP: return "Temperature";
         case VALVE: return "Valve Reading";
@@ -391,6 +397,8 @@ String PortManager::circuitTypeToCode(CIRCUIT_TYPE type){
         case ONOFF: return "ONOFF";
         case ON24V: return "ON24V";
         case OFF24V: return "OFF24V";
+        case ON10V: return "ON10V";
+        case OFF10V: return "OFF10V";
         case MA420: return "MA420";
         case CTEMP: return "CTEMP";
         case VALVE: return "VALVE";

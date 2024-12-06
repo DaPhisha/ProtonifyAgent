@@ -43,8 +43,8 @@ void ActionONOFF::execute() {
             port->lastUpdated = LogManager::getInstance().getCurrentTime();
             return;
         }
-        //LOG("ActionONOFF - Port ACTUAL NOT IMPLEMENTED: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
-        port->lastUpdated = LogManager::getInstance().getCurrentTime();
+        LOG("ActionONOFF - Port ACTUAL NOT IMPLEMENTED: " + String(port->pinDescription) + " PRI: " + priority + " MSG: " + msg);
+        //port->lastUpdated = LogManager::getInstance().getCurrentTime();
     }
 }
 

@@ -574,7 +574,7 @@ const char* ResourceHandler::getJavascript() {
     return R"(
     
     document.addEventListener('DOMContentLoaded', function() {
-    console.log(`javascript version: 1.2.0`);
+    console.log(`javascript version: 1.3.0`);
     const versionElement = document.querySelector('.version');
     const version = versionElement ? versionElement.textContent.trim() : 'unknown';
     
@@ -726,6 +726,8 @@ if (window.location.pathname.startsWith('/ports')) {
                         <select id='circuitType' name='circuitType'>
                             <option value='ON24V' ${port.circuitType === 'ON24V' ? 'selected' : ''}>ON24V</option>
                             <option value='OFF24V' ${port.circuitType === 'OFF24V' ? 'selected' : ''}>OFF24V</option>
+                            <option value='ON10V' ${port.circuitType === 'ON10V' ? 'selected' : ''}>ON10V</option>
+                            <option value='OFF10V' ${port.circuitType === 'OFF10V' ? 'selected' : ''}>OFF10V</option>
                             <option value='ONOFF' ${port.circuitType === 'ONOFF' ? 'selected' : ''}>ONOFF</option>
                             <option value='MA420' ${port.circuitType === 'MA420' ? 'selected' : ''}>MA420</option>
                             <option value='CTEMP' ${port.circuitType === 'CTEMP' ? 'selected' : ''}>CTEMP</option>
@@ -782,7 +784,8 @@ if (window.location.pathname.startsWith('/ports')) {
                         errorMessage.style.color = xhr.status === 200 ? 'green' : 'red';
                         if (xhr.status === 200 && response.status === 'SUCCESS') {
                             console.log('Port update successful');
-                            updatePortLists(response.message); // Refresh the port lists if the update was successful
+                            updatePortLists(response.message);
+                            location.reload(); 
                         } else {
                             console.log('Port update failed');
                         }

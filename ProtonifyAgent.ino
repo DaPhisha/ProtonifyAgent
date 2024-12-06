@@ -38,12 +38,14 @@ Define port logic rules on what ports can be assigned which circuit types.  CRIT
 #include "ActionCTEMP.h"
 #include "ActionON24V.h"
 #include "ActionOFF24V.h"
+#include "ActionON10V.h"
+#include "ActionOFF10V.h"
 #include "ActionDisplay.h"
 #define MAX_EVENTS 10  // Maximum number of scheduled events
 #define MASTER_DEBUG true
 
 const char* PROJECT_VERSION = "2.0.1"; // Project version
-uint32_t m_loopCounter = 0;
+
 // Initialize an event scheduler
 EventScheduler scheduler(MAX_EVENTS); 
 ActionQueue actionQueue;
@@ -64,11 +66,16 @@ void setup() {
         portManager.init();
         m_webServer.init();
 
-        // Initialize Wire transmission -- MOVE to M4?
+        // Initialize Wire transmission -- Not sure if this is doubling up or not?
         Wire.begin();
-        if (!MachineControl_DigitalInputs.begin()) {
-          LOG("Failed to initialize the digital input GPIO expander!");
+         //initialize the Analog Ports
+        if (!MachineControl_DigitalOutputs.begin()) {
+          LOG("Failed to initialize the digital outputs!");
         }
+        if (!MachineControl_DigitalInputs.begin()) {
+          LOG("Failed to initialize the digital input!");
+        }
+  
     } catch (const std::exception& e) { 
         LogManager::getInstance().writeLog("*********MAJOR STARTUP FAULT************");
         LogManager::getInstance().writeLog("Caught std::exception: " + String(e.what()));
@@ -82,7 +89,7 @@ void setup() {
 
 void loop() {
     try {
-        m_loopCounter ++;
+        
         LogManager::getInstance().updateTime();
         //check serial connection
         LogManager::getInstance().checkSerialConnection();
@@ -93,16 +100,17 @@ void loop() {
         // Update ports
         PortManager& portManager = PortManager::getInstance();
         //update all ports every REFRESH cycle
-        //Populate Queue
-        populateActionQueue();
-        //Prioritize queue by highest priority value (highest to lowest
-        actionQueue.sortActions(); 
-        //Execute Action Queue
-        actionQueue.executeActions();
+        portManager.m_loopCounter ++;
+        
 
         // Check if the refresh interval has passed
-        if (m_loopCounter >= portManager.settings.REFRESH_RATE ) {
-
+        if (portManager.m_loopCounter >= portManager.settings.REFRESH_RATE ) {
+            //Populate Queue
+            populateActionQueue();
+            //Prioritize queue by highest priority value (highest to lowest
+            actionQueue.sortActions(); 
+            //Execute Action Queue
+            actionQueue.executeActions();
             // Check to see if the Arduino is registered
             if (portManager.settings.REGISTRATION_STATUS == true) {
                 //LOG("Sending report to server.");
@@ -129,7 +137,7 @@ void loop() {
             //RESET ACTION QUEUE
             actionQueue.clearActions();  
             //reset the Loop counter
-            m_loopCounter = 0;
+            portManager.m_loopCounter = 0;
         }
      
     } catch (const std::exception& e) { 
@@ -160,6 +168,12 @@ void populateActionQueue() {
                     break;
                 case OFF24V:
                     action = new ActionOFF24V(&port,9,"OFF24V");  
+                    break;
+                case ON10V:
+                    action = new ActionON10V(&port,9,"ON10V");  
+                    break;
+                case OFF10V:
+                    action = new ActionOFF10V(&port,9,"OFF10V");  
                     break;
                 case ONOFF:
                     action = new ActionONOFF(&port,9,"ONOFF");  
