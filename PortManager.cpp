@@ -45,10 +45,10 @@ void PortManager::initializeDefaults() {
         strncpy(settings.Admin_USERNAME, "admin", sizeof(settings.Admin_USERNAME));
         //set default password
         strncpy(settings.Admin_PASSWORD, "password", sizeof(settings.Admin_PASSWORD));
-        strncpy(settings.WIFI_SSID, "HAL2000", sizeof(settings.WIFI_SSID));
-        strncpy(settings.WIFI_PASSWORD, "quiettree081", sizeof(settings.WIFI_PASSWORD));
-        //strncpy(settings.WIFI_SSID, "ArduinoNetwork", sizeof(settings.WIFI_SSID));
-        //strncpy(settings.WIFI_PASSWORD, "hotdogtimemachine!69", sizeof(settings.WIFI_PASSWORD));
+        //strncpy(settings.WIFI_SSID, "HAL2000", sizeof(settings.WIFI_SSID));
+        //strncpy(settings.WIFI_PASSWORD, "quiettree081", sizeof(settings.WIFI_PASSWORD));
+        strncpy(settings.WIFI_SSID, "ArduinoNetwork", sizeof(settings.WIFI_SSID));
+        strncpy(settings.WIFI_PASSWORD, "hotdogtimemachine!69", sizeof(settings.WIFI_PASSWORD));
 
          //Default IP Address
          settings.IP_ADDRESS[0] = 192;
